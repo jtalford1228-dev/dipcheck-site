@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DipCheck — AI Visual Vehicle Diagnostic Scanner</title>
+  <meta name="description" content="Point your camera. Get an instant AI diagnosis. DIY repair steps, parts pricing, and an AI mechanic — all on your phone, privacy-first." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+/* ============================
+   DESIGN TOKENS (from theme.ts)
+   ============================ */
+:root {
+  --bg:#050A13;--bg-alt:#03060B;--surface:#0C1524;--surface2:#16233A;
+  --surface-alt:#111C2F;--panel:#0A1322;--panel-alt:#101F34;
+  --border:#274060;--border-light:rgba(88,216,255,.18);--border-glow:rgba(88,216,255,.4);
+  --cyan:#58D8FF;--cyan-soft:rgba(88,216,255,.16);
+  --blue:#33A1FF;--blue-soft:rgba(51,161,255,.18);
+  --orange:#FFAE42;--orange-soft:rgba(255,174,66,.18);
+  --yellow:#FFD447;--yellow-soft:rgba(255,212,71,.18);
+  --green:#2FE27A;--green-soft:rgba(47,226,122,.18);
+  --red:#FF5C72;--red-soft:rgba(255,92,114,.18);
+  --text:#F4F8FF;--text-light:#EAF6FF;--text-muted:#93AAC4;--text-dim:#7488A4;
+  --card-glow:rgba(108,231,255,.16);--line:rgba(108,231,255,.28);
+  --grad-main:linear-gradient(135deg,#58D8FF 0%,#33A1FF 50%,#FFAE42 100%);
+  --grad-gold:linear-gradient(135deg,#F5B324 0%,#E29A18 50%,#CC8208 100%);
+  --grad-cyan:linear-gradient(135deg,#58D8FF 0%,#33A1FF 100%);
+  --r-sm:8px;--r-md:14px;--r-lg:20px;--r-xl:28px;--r-pill:9999px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden;line-height:1.6}
+::selection{background:rgba(88,216,255,.3);color:#fff}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;outline:none}
+.container{max-width:1280px;margin:0 auto;padding:0 2rem}
+.section-pad{padding:7rem 2rem;position:relative;z-index:2}
+
+/* ============================
+   PARTICLE CANVAS
+   ============================ */
+#pc{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.cw{position:relative;z-index:2}
+
+/* ============================
+   NAV
+   ============================ */
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:1.15rem 2rem;transition:all .3s ease}
+.nav.scrolled{background:rgba(5,10,19,.88);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border-light);padding:.8rem 2rem;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.nav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{height:36px;display:flex;align-items:center}
+.nav-logo svg{height:100%;width:auto}
+.nav-links{display:flex;gap:2rem;list-style:none;align-items:center}
+.nav-links a{font-size:.9rem;font-weight:500;color:var(--text-muted);transition:color .25s}
+.nav-links a:hover{color:var(--cyan)}
+.nav-cta{padding:.55rem 1.3rem;font-size:.85rem;font-weight:700;color:var(--bg);background:var(--grad-main);border-radius:var(--r-sm);box-shadow:0 0 18px rgba(88,216,255,.35);transition:all .3s}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 0 30px rgba(88,216,255,.6)}
+.mob-btn{display:none;flex-direction:column;gap:5px}
+.mob-btn span{width:24px;height:2px;background:var(--text);border-radius:2px}
+
+/* ============================
+   HERO
+   ============================ */
+.hero{min-height:100vh;padding:8rem 2rem 5rem;display:flex;align-items:center;position:relative;overflow:hidden}
+.hero-glow{position:absolute;border-radius:50%;pointer-events:none;filter:blur(60px)}
+.hg1{top:-10%;left:18%;width:650px;height:650px;background:radial-gradient(circle,rgba(88,216,255,.12) 0%,transparent 70%);animation:gf 12s ease-in-out infinite alternate}
+.hg2{bottom:5%;right:8%;width:500px;height:500px;background:radial-gradient(circle,rgba(255,174,66,.08) 0%,transparent 70%);animation:gf 16s ease-in-out infinite alternate-reverse}
+@keyframes gf{0%{transform:translate(0,0) scale(1)}50%{transform:translate(35px,-30px) scale(1.06)}100%{transform:translate(-25px,35px) scale(.94)}}
+.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:4rem;align-items:center;position:relative;z-index:2}
+.hero-pill{display:inline-flex;align-items:center;gap:.55rem;padding:.4rem 1rem;background:rgba(88,216,255,.08);border:1px solid rgba(88,216,255,.25);border-radius:var(--r-pill);font-size:.8rem;font-weight:600;color:var(--cyan);margin-bottom:1.5rem}
+.pulse-dot{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 10px var(--green);animation:pd 2s infinite}
+@keyframes pd{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.4}}
+.hero h1{font-family:'Outfit',sans-serif;font-size:clamp(2.8rem,5.5vw,4.6rem);font-weight:900;line-height:1.06;letter-spacing:-.03em;margin-bottom:1.5rem}
+.hero h1 .tg{background:var(--grad-gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero h1 .tc{background:var(--grad-cyan);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:1.15rem;color:var(--text-muted);line-height:1.75;max-width:560px;margin-bottom:2.5rem}
+.hero-btns{display:flex;gap:1.2rem;flex-wrap:wrap;margin-bottom:3rem}
+.btn-pri{padding:.9rem 2rem;font-size:1rem;font-weight:700;color:var(--bg);background:var(--grad-main);border-radius:var(--r-md);box-shadow:0 8px 30px rgba(88,216,255,.4);display:flex;align-items:center;gap:.6rem;transition:all .3s}
+.btn-pri:hover{transform:translateY(-3px);box-shadow:0 15px 45px rgba(88,216,255,.6)}
+.btn-sec{padding:.9rem 2rem;font-size:1rem;font-weight:600;color:var(--text-light);background:rgba(12,21,36,.7);border:1.5px solid var(--border);border-radius:var(--r-md);display:flex;align-items:center;gap:.6rem;transition:all .3s}
+.btn-sec:hover{border-color:var(--cyan);background:rgba(88,216,255,.08);transform:translateY(-2px)}
+.hero-proof{display:flex;gap:2.5rem;padding-top:1.5rem;border-top:1px solid rgba(39,64,96,.4)}
+.proof-item .pv{font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:800}
+.proof-item .pl{font-size:.78rem;color:var(--text-dim);font-weight:500}
+.ac{color:var(--cyan)}.ag{color:var(--green)}.ao{color:var(--orange)}
+
+
+/* ============================
+   PHONE SIMULATOR (True 1:1 matching app/index.tsx)
+   ============================ */
+.phone-frame{position:relative;width:390px;height:844px;margin:0 auto;border-radius:44px;background:#020509;padding:12px;box-shadow:0 0 0 1.5px rgba(108,231,255,0.28),0 30px 90px rgba(0,0,0,0.9),0 0 60px rgba(108,231,255,0.15);transform:scale(0.85);transform-origin:top center}
+@media(min-width:1024px){.phone-frame{transform:scale(0.9)}}
+.phone-screen{border-radius:36px;background:#050A13;overflow:hidden;border:1px solid rgba(255,255,255,.07);width:100%;height:100%;display:flex;flex-direction:column;position:relative}
+.phone-notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:120px;height:30px;background:#000;border-radius:15px;z-index:100}
+
+.safe-area{flex:1;display:flex;flex-direction:column;padding:48px 16px 16px;z-index:10}
+.app-top{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+.app-wordmark{font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;letter-spacing:-0.5px;padding-left:4px}
+.app-wordmark .wd{color:#F5B324}.app-wordmark .wc{color:#2878DD}
+.app-tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+.app-tab{padding:10px 16px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;white-space:nowrap;background:rgba(6,16,29,0.82);border:1px solid rgba(108,231,255,0.28);color:#F4F8FF}
+.app-tab.active-tab{background:#FFD447;border-color:#FFD447;color:#09111D}
+
+.scan-banner{border-radius:24px;border:1px solid rgba(108,231,255,0.28);background:rgba(0,194,255,0.12);padding:12px 14px;display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.scan-banner-label{color:#6CE7FF;font-size:11px;font-weight:900;letter-spacing:1.4px;text-transform:uppercase}
+.scan-banner-text{color:#F4F8FF;font-size:14px;font-weight:700;line-height:20px}
+
+.vehicle-pill{align-self:flex-start;padding:12px 14px;border-radius:18px;border:1px solid rgba(108,231,255,0.28);background:rgba(6,16,29,0.82);display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+.vehicle-pill-label{color:#FFD447;font-size:11px;font-weight:800;letter-spacing:1px}
+.vehicle-pill-value{color:#F4F8FF;font-size:15px;font-weight:700}
+
+.mini-stats{display:flex;gap:8px;margin-bottom:12px}
+.mini-stat{flex:1;padding:12px;border-radius:12px;background:rgba(5,18,32,0.74);border:1px solid rgba(108,231,255,0.28)}
+.mini-stat-label{color:#A1B7D3;font-size:10px;letter-spacing:1px;text-transform:uppercase}
+.mini-stat-val{color:#F4F8FF;font-size:13px;font-weight:700;margin-top:2px}
+
+.viewfinder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:0;background:#050A13}
+.viewfinder img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.6}
+.camera-scrim{position:absolute;inset:0;background:rgba(2,8,18,0.28)}
+
+.reticle-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:none;z-index:5}
+.reticle-outer{width:86%;aspect-ratio:1.02;border-radius:24px;border:1.5px solid rgba(108,231,255,0.78);background:rgba(14,64,102,0.1);display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(88,216,255,0.34)}
+.reticle-inner{width:62%;height:62%;border-radius:18px;border:1px solid rgba(255,212,71,0.8)}
+.reticle-caption-row{width:92%;display:flex;justify-content:space-between;align-items:center;gap:16px}
+.rc-l{color:#F4F8FF;font-size:13px;font-weight:600;flex:1}
+.rc-r{color:#6CE7FF;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+
+.laser{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#6CE7FF,transparent);box-shadow:0 0 15px #6CE7FF;z-index:20;animation:ls 3s ease-in-out infinite}
+@keyframes ls{0%{top:8%;opacity:0}15%{opacity:1}85%{opacity:1}100%{top:92%;opacity:0}}
+
+.drawer-area{display:flex;flex-direction:column;gap:12px;z-index:30}
+.swipe-hint-row{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0}
+.drawer-handle{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,0.25)}
+.swipe-hint-text{color:#A1B7D3;font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase}
+
+.diag-panel{border-radius:24px;border:1px solid rgba(108,231,255,0.28);background:#0A1322;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 18px rgba(0,0,0,0.3)}
+.diag-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.diag-title-wrap{flex:1;display:flex;flex-direction:column;gap:6px}
+.diag-eyebrow{color:#FFD447;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.diag-headline{color:#F4F8FF;font-size:20px;line-height:25px;font-weight:800}
+.diag-meta{color:#6CE7FF;font-size:13px;font-weight:700}
+.diag-finding{color:#F4F8FF;font-size:14px;line-height:20px}
+
+.sev{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.sev-urgent{background:rgba(255,174,66,0.18);color:#FFC980;border:1px solid rgba(255,174,66,0.3)}
+.sev-caution{background:rgba(255,212,71,0.18);color:#FFE08A;border:1px solid rgba(255,212,71,0.3)}
+.sev-info{background:rgba(51,161,255,0.18);color:#7DD3FC;border:1px solid rgba(51,161,255,0.3)}
+
+.action-dots{display:flex;flex-direction:column;gap:6px}
+.action-row{display:flex;align-items:flex-start;gap:9px}
+.a-dot{width:7px;height:7px;border-radius:999px;background:#FFD447;margin-top:6px;flex-shrink:0}
+.a-text{color:#A1B7D3;font-size:13px;line-height:18px}
+
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.action-pill{padding:11px 14px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;border:1px solid rgba(108,231,255,0.28);background:rgba(6,16,29,0.86);color:#F4F8FF;transition:opacity 0.2s}
+.action-pill.emp{background:#FFD447;border-color:#FFD447;color:#09111D}
+
+.ctrl-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:4px}
+
+/* ============================
+   SECTION HEADERS
+   ============================ */
+.sh{text-align:center;max-width:740px;margin:0 auto 4rem}
+.sh-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.38rem 1rem;border-radius:var(--r-pill);background:var(--cyan-soft);border:1px solid var(--border-light);font-size:.78rem;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:1.2rem}
+.sh h2{font-family:'Outfit',sans-serif;font-size:clamp(2rem,4vw,3.2rem);font-weight:800;line-height:1.15;letter-spacing:-.02em;margin-bottom:1rem}
+.sh p{font-size:1.1rem;color:var(--text-muted);line-height:1.7}
+.tc-h{background:var(--grad-cyan);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+/* ============================
+   FEATURES GRID
+   ============================ */
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+.feat-card{background:linear-gradient(145deg,rgba(12,21,36,.85),rgba(8,17,29,.95));border:1px solid var(--border);border-radius:var(--r-lg);padding:2.2rem 1.8rem;overflow:hidden;transition:all .4s ease;position:relative}
+.feat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:0;transition:opacity .4s}
+.feat-card:hover{transform:translateY(-7px);border-color:var(--cyan);box-shadow:0 20px 55px rgba(0,0,0,.5),0 0 25px rgba(88,216,255,.12)}
+.feat-card:hover::before{opacity:1}
+.feat-icon{width:54px;height:54px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:1.3rem}
+.fi-c{background:var(--cyan-soft);border:1px solid rgba(88,216,255,.3)}
+.fi-o{background:var(--orange-soft);border:1px solid rgba(255,174,66,.3)}
+.fi-g{background:var(--green-soft);border:1px solid rgba(47,226,122,.3)}
+.fi-y{background:var(--yellow-soft);border:1px solid rgba(255,212,71,.3)}
+.fi-b{background:var(--blue-soft);border:1px solid rgba(51,161,255,.3)}
+.fi-r{background:var(--red-soft);border:1px solid rgba(255,92,114,.3)}
+.feat-card h3{font-size:1.2rem;font-weight:700;margin-bottom:.6rem;color:var(--text-light)}
+.feat-card p{font-size:.92rem;color:var(--text-muted);line-height:1.6}
+
+/* ============================
+   ORIGIN STORY
+   ============================ */
+.story{background:linear-gradient(180deg,transparent,rgba(12,21,36,.6),transparent)}
+.story-grid{display:grid;grid-template-columns:.45fr .55fr;gap:4rem;align-items:center}
+.story-portrait{position:relative;display:flex;align-items:center;justify-content:center}
+.portrait-frame{width:320px;height:380px;border-radius:var(--r-xl);background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;box-shadow:0 25px 70px rgba(0,0,0,.6),0 0 40px rgba(88,216,255,.1)}
+.portrait-frame .initials{font-family:'Outfit',sans-serif;font-size:6rem;font-weight:900;background:var(--grad-gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent;user-select:none}
+.portrait-badge{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);padding:.5rem 1.5rem;border-radius:var(--r-pill);background:var(--surface);border:1px solid var(--border-glow);font-family:'JetBrains Mono',monospace;font-size:.8rem;font-weight:700;color:var(--cyan);white-space:nowrap;box-shadow:0 8px 25px rgba(0,0,0,.5)}
+.story-content{display:flex;flex-direction:column;gap:1.5rem}
+.story-name{font-family:'Outfit',sans-serif;font-size:2.2rem;font-weight:900;color:var(--text-light)}
+.story-role{font-size:1rem;color:var(--cyan);font-weight:700;margin-top:-.75rem}
+.story-p{font-size:1.02rem;color:var(--text-muted);line-height:1.75}
+.story-p strong{color:var(--text-light)}
+.story-p .hl-y{color:var(--yellow);font-weight:700}
+.story-p .hl-c{color:var(--cyan);font-weight:700}
+.quote-block{padding:1.5rem;background:var(--surface);border-left:3px solid var(--yellow);border-radius:0 var(--r-md) var(--r-md) 0;font-style:italic;color:var(--text-light);font-size:1.08rem;line-height:1.65}
+.quote-attr{font-style:normal;font-size:.85rem;color:var(--text-dim);margin-top:.5rem;font-weight:600}
+
+/* ============================
+   PRICING
+   ============================ */
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;max-width:1100px;margin:0 auto}
+.price-card{background:linear-gradient(145deg,rgba(12,21,36,.85),rgba(8,17,29,.95));border:1px solid var(--border);border-radius:var(--r-xl);padding:3rem 2.2rem;display:flex;flex-direction:column;transition:all .35s}
+.price-card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.price-card.pop{border-color:var(--cyan);box-shadow:0 0 35px rgba(88,216,255,.18)}
+.pop-badge{display:inline-block;padding:.3rem 1rem;border-radius:var(--r-pill);background:var(--grad-main);color:var(--bg);font-size:.72rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:1rem;align-self:flex-start}
+.price-card h3{font-size:1.5rem;font-weight:800;color:var(--text-light);margin-bottom:.4rem}
+.price-tag{color:var(--text-muted);font-size:.9rem;margin-bottom:1rem}
+.price-val{font-family:'JetBrains Mono',monospace;font-size:2.5rem;font-weight:900;color:var(--text-light);margin-bottom:1.5rem}
+.price-val span{font-size:.95rem;color:var(--text-dim);font-weight:500}
+.price-list{list-style:none;display:flex;flex-direction:column;gap:.75rem;margin-bottom:2rem;flex:1}
+.price-list li{display:flex;align-items:center;gap:.6rem;font-size:.9rem;color:var(--text-light)}
+.price-list .ck{color:var(--green);font-weight:900}
+.btn-plan{width:100%;padding:.9rem;border-radius:var(--r-md);font-weight:700;font-size:.92rem;text-align:center;transition:all .3s}
+.btn-plan-p{background:var(--grad-main);color:var(--bg);box-shadow:0 0 20px rgba(88,216,255,.3)}
+.btn-plan-p:hover{box-shadow:0 0 35px rgba(88,216,255,.6);transform:translateY(-2px)}
+.btn-plan-s{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text-light)}
+.btn-plan-s:hover{border-color:var(--cyan);background:var(--cyan-soft)}
+
+/* ============================
+   FINAL CTA
+   ============================ */
+.cta-box{background:linear-gradient(135deg,rgba(12,21,36,.95),rgba(5,10,19,.98));border:1px solid var(--border-glow);border-radius:var(--r-xl);padding:5rem 3rem;text-align:center;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.7),0 0 50px rgba(88,216,255,.12)}
+
+/* ============================
+   FOOTER
+   ============================ */
+.footer{padding:3.5rem 2rem 2rem;border-top:1px solid rgba(255,255,255,.06);background:var(--bg-alt)}
+.footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem}
+.footer-brand{font-family:'Outfit',sans-serif;font-size:1.1rem;font-weight:900}
+.footer-brand .wd{color:#F5B324}.footer-brand .wc{color:#2878DD}
+.footer-links{display:flex;gap:2rem;list-style:none}
+.footer-links a{font-size:.85rem;color:var(--text-muted);transition:color .2s}
+.footer-links a:hover{color:var(--cyan)}
+.footer-copy{font-size:.8rem;color:var(--text-dim)}
+
+/* ============================
+   RESPONSIVE
+   ============================ */
+@media(max-width:1024px){
+  .hero-grid,.story-grid{grid-template-columns:1fr;text-align:center}
+  .hero-sub{margin:0 auto 2.5rem}
+  .hero-btns,.hero-proof{justify-content:center}
+  .feat-grid{grid-template-columns:repeat(2,1fr)}
+  .price-grid{grid-template-columns:1fr;max-width:440px}
+  .story-portrait{order:-1}
+  .story-content{text-align:center}
+  .quote-block{text-align:left}
+}
+@media(max-width:768px){
+  .nav-links{display:none}
+  .mob-btn{display:flex}
+  .feat-grid{grid-template-columns:1fr}
+  .hero{padding:6rem 1.5rem 3rem}
+  .section-pad{padding:4rem 1.5rem}
+  .cta-box{padding:3rem 1.5rem}
+  .footer-inner{flex-direction:column;text-align:center}
+  .footer-links{flex-wrap:wrap;justify-content:center}
+}
+  </style>
+</head>
+<body>
+
+<canvas id="pc"></canvas>
+
+<div class="cw">
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 585 158">
+        <defs>
+          <linearGradient id="m" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#0F1418"/><stop offset="55%" stop-color="#9AA4B0"/><stop offset="100%" stop-color="#D8E2EE"/></linearGradient>
+          <radialGradient id="rr" cx=".42" cy=".28" r=".75"><stop offset="0%" stop-color="#FF6B6B"/><stop offset="100%" stop-color="#770A0A"/></radialGradient>
+          <radialGradient id="bf" cx=".4" cy=".3" r=".85"><stop offset="0%" stop-color="#6BCEFF"/><stop offset="100%" stop-color="#0A4A80"/></radialGradient>
+          <linearGradient id="ho" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F4B942" stop-opacity=".45"/><stop offset="100%" stop-color="#F4D23A" stop-opacity=".55"/></linearGradient>
+          <filter id="ts" x="-5%" y="-5%" width="110%" height="120%"><feGaussianBlur in="SourceAlpha" stdDeviation=".8" result="b"/><feOffset dy="1.5" result="o"/><feFlood flood-color="#000" flood-opacity=".4" result="c"/><feComposite in="c" in2="o" operator="in" result="s"/><feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <g transform="translate(0,8)"><g transform="translate(0,105) scale(1,1.26) translate(0,-105)"><text x="3" y="108" font-family="Outfit,sans-serif" font-weight="800" font-size="108" fill="#AE6A00">D</text><text x="0" y="105" font-family="Outfit,sans-serif" font-weight="800" font-size="108" fill="#F5B324" filter="url(#ts)">D</text></g></g>
+        <text x="113" y="100" font-family="Outfit,sans-serif" font-weight="800" font-size="108" fill="#AE6A00">p</text><text x="110" y="97" font-family="Outfit,sans-serif" font-weight="800" font-size="108" fill="#F5B324" filter="url(#ts)">p</text>
+        <g transform="translate(0,8)"><g transform="translate(0,105) scale(1,1.2) translate(0,-105)"><text x="183" y="118" font-family="Outfit,sans-serif" font-weight="800" font-size="108" fill="#183E7C">C</text><text x="180" y="115" font-family="Outfit,sans-serif" font-weight="800" font-size="108" fill="#2878DD" filter="url(#ts)">C</text></g></g>
+        <text x="261" y="130" font-family="Outfit,sans-serif" font-weight="800" font-size="108" fill="#183E7C">heck</text><text x="258" y="127" font-family="Outfit,sans-serif" font-weight="800" font-size="108" fill="#2878DD" filter="url(#ts)">heck</text>
+        <g transform="translate(97,72) rotate(-12) scale(.36)"><rect x="-20" y="-55" width="40" height="185" rx="7" fill="url(#m)"/><rect x="-20" y="62" width="40" height="68" rx="7" fill="url(#ho)"/><g transform="translate(0,-105) scale(1,1.1)"><circle r="58" fill="url(#rr)"/><circle r="43" fill="url(#bf)"/><polyline points="-21,-2 -6,15 22,-19" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></g></g>
+      </svg>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#story">Our Story</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#download" class="nav-cta">Get the App →</a></li>
+    </ul>
+    <button class="mob-btn" onclick="document.querySelector('.nav-links').classList.toggle('open')"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero" id="hero">
+  <div class="hero-glow hg1"></div>
+  <div class="hero-glow hg2"></div>
+  <div class="container hero-grid">
+    <div>
+      <div class="hero-pill"><span class="pulse-dot"></span>AI-Powered Vehicle Computer Vision</div>
+      <h1>Point. Scan.<br /><span class="tc">Diagnose Any Vehicle</span><br /><span class="tg">In Real-Time.</span></h1>
+      <p class="hero-sub">DipCheck uses your phone camera to identify engine issues, fluid leaks, worn parts, and more — then delivers severity ratings, step-by-step DIY repair guides, and live parts price comparisons. All on-device. All privacy-first.</p>
+      <div class="hero-btns">
+        <a href="#download" class="btn-pri"><span>Get DipCheck Free</span> <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+        <a href="#simulator" class="btn-sec"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg><span>Try Live Demo</span></a>
+      </div>
+      <div class="hero-proof">
+        <div class="proof-item"><div class="pv ac">98.7%</div><div class="pl">AI Confidence</div></div>
+        <div class="proof-item"><div class="pv ag">&lt;180ms</div><div class="pl">Inference Speed</div></div>
+        <div class="proof-item"><div class="pv ao">100%</div><div class="pl">On-Device Privacy</div></div>
+      </div>
+    </div>
+
+    
+    <!-- PHONE SIMULATOR — Exact 1:1 replication of app/index.tsx -->
+    <div id="simulator" style="display:flex;justify-content:center;align-items:center">
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="phone-notch"></div>
+
+          <!-- Viewfinder background -->
+          <div class="viewfinder">
+            <img id="sim-img" src="https://images.unsplash.com/photo-1613214149922-f1809c99b414?auto=format&fit=crop&w=900&q=80" alt="Camera feed" />
+            <div class="camera-scrim"></div>
+            <div class="laser"></div>
+          </div>
+
+          <div class="safe-area">
+            <!-- Top Header -->
+            <div class="app-top">
+              <div class="app-wordmark"><span class="wd">Dip</span><span class="wc">Check</span></div>
+              <div class="app-tabs">
+                <button class="app-tab" onclick="switchScenario('hose')">History</button>
+                <button class="app-tab" onclick="switchScenario('belt')">Garage</button>
+                <button class="app-tab" onclick="switchScenario('battery')">Account</button>
+                <button class="app-tab" onclick="switchScenario('settings')">Settings</button>
+              </div>
+              
+              <div class="scan-banner">
+                <span class="scan-banner-label" id="sim-status-label">SCAN READY</span>
+                <span class="scan-banner-text" id="sim-status-text">Point the camera at a part, leak, belt, hose, or warning light area.</span>
+              </div>
+              
+              <div class="vehicle-pill">
+                <span class="vehicle-pill-label">ACTIVE VEHICLE</span>
+                <span class="vehicle-pill-value" id="sim-vehicle">Shop Truck • 2018 Ford F-150</span>
+              </div>
+              
+              <div class="mini-stats">
+                <div class="mini-stat"><div class="mini-stat-label">AI</div><div class="mini-stat-val">Gemini 2.5</div></div>
+                <div class="mini-stat"><div class="mini-stat-label">VOICE</div><div class="mini-stat-val">Replies on</div></div>
+                <div class="mini-stat"><div class="mini-stat-label">SCANS</div><div class="mini-stat-val">Unlimited</div></div>
+              </div>
+            </div>
+
+            <!-- Reticle -->
+            <div class="reticle-wrap">
+              <div class="reticle-outer">
+                <div class="reticle-inner"></div>
+              </div>
+              <div class="reticle-caption-row">
+                <span class="rc-l">Align the part or leak inside the frame</span>
+                <span class="rc-r" id="sim-scan-state">READY TO SCAN</span>
+              </div>
+            </div>
+
+            <!-- Drawer Area -->
+            <div class="drawer-area">
+              <div class="swipe-hint-row" onclick="document.getElementById('sim-diag').style.display = document.getElementById('sim-diag').style.display === 'none' ? 'flex' : 'none'; document.getElementById('sim-swipe').textContent = document.getElementById('sim-diag').style.display === 'none' ? 'Swipe up for system status' : 'Swipe down to hide details';">
+                <div class="drawer-handle"></div>
+                <div class="swipe-hint-text" id="sim-swipe">Swipe down to hide details</div>
+              </div>
+              
+              <div class="diag-panel" id="sim-diag">
+                <div class="diag-header">
+                  <div class="diag-title-wrap">
+                    <div class="diag-eyebrow">LATEST DIAGNOSIS</div>
+                    <div class="diag-headline" id="sim-headline">Cooling leak risk spotted at upper radiator hose.</div>
+                  </div>
+                  <span class="sev sev-urgent" id="sim-sev">urgent</span>
+                </div>
+                
+                <div class="diag-meta" id="sim-meta">Upper Radiator Hose • Cooling • 87% confidence</div>
+                <div class="diag-finding" id="sim-finding">Visible coolant weeping is present near the clamp and the hose body looks slightly swollen near the thermostat housing.</div>
+                
+                <div class="action-dots" id="sim-actions">
+                  <div class="action-row"><div class="a-dot"></div><span class="a-text">Verify coolant level before driving again</span></div>
+                  <div class="action-row"><div class="a-dot"></div><span class="a-text">Replace the hose and clamp soon to avoid an overheat event</span></div>
+                </div>
+                
+                <div class="pill-row">
+                  <button class="action-pill emp">Result</button>
+                  <button class="action-pill">Chat</button>
+                  <button class="action-pill">Repair</button>
+                  <button class="action-pill">Pricing</button>
+                </div>
+              </div>
+              
+              <div class="ctrl-row">
+                <button class="action-pill" id="sim-flash">Flash off</button>
+                <button class="action-pill emp" id="sim-live-btn" onclick="toggleLive()">Start live scan</button>
+                <button class="action-pill" id="sim-scan-btn" onclick="runDemoScan()">Manual scan</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</header>
+
+<!-- FEATURES -->
+<section class="section-pad" id="features">
+  <div class="container">
+    <div class="sh">
+      <div class="sh-badge">⚡ Core Capabilities</div>
+      <h2>Everything You Need to <span class="tc-h">Fix It Yourself</span></h2>
+      <p>Whether you've never touched a wrench or you rebuild engines on weekends — DipCheck meets you where you are.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card"><div class="feat-icon fi-c">👁️</div><h3>AI Visual Diagnosis</h3><p>Point your camera at hoses, belts, fluid levels, brakes, or corrosion. Our neural vision pipeline classifies issues with confidence scores in milliseconds.</p></div>
+      <div class="feat-card"><div class="feat-icon fi-o">🏷️</div><h3>Live Parts Pricing</h3><p>Automatically identifies OEM and aftermarket part numbers and cross-references real-time prices across RockAuto, Amazon, eBay, and dealer catalogs.</p></div>
+      <div class="feat-card"><div class="feat-icon fi-g">🔒</div><h3>Privacy-First & On-Device</h3><p>All scanning happens on your phone. Images never leave your device. Telemetry is opt-in only. Zero hardcoded secrets.</p></div>
+      <div class="feat-card"><div class="feat-icon fi-y">🔧</div><h3>Step-by-Step Repair Guides</h3><p>Turn any scan into an actionable repair checklist — tools needed, torque specs, safety warnings, and difficulty ratings.</p></div>
+      <div class="feat-card"><div class="feat-icon fi-b">🚗</div><h3>Multi-Vehicle Digital Garage</h3><p>Add every car you own. Track VIN decodes, odometer readings, service history, and scan results for your whole fleet.</p></div>
+      <div class="feat-card"><div class="feat-icon fi-r">🤖</div><h3>AI Mechanic Chat</h3><p>Ask "Can I drive with this leak?" or "What tools do I need?" and get grounded, vehicle-specific answers instantly.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ORIGIN STORY -->
+<section class="section-pad story" id="story">
+  <div class="container">
+    <div class="sh">
+      <div class="sh-badge">👤 The Origin Story</div>
+      <h2>Born in a Driveway. <span class="tc-h">Built for Everyone.</span></h2>
+    </div>
+    <div class="story-grid">
+      <div class="story-portrait">
+        <div class="portrait-frame">
+          <div class="initials">JA</div>
+        </div>
+        <div class="portrait-badge">@jtalford1228-dev • Truman-dev</div>
+      </div>
+      <div class="story-content">
+        <h3 class="story-name">Jeremey Alford</h3>
+        <p class="story-role">Founder & Solo Developer — Truman-dev</p>
+
+        <p class="story-p">
+          I went to school for <strong>welding</strong>. I never planned to write a single line of code. But then one afternoon I was under the hood of my truck, spending hours chasing down a <span class="hl-y">vacuum leak</span> — YouTube video after YouTube video, forum post after forum post, guessing which hose was the problem. I remember thinking:
+        </p>
+
+        <div class="quote-block">
+          "Why isn't there an app that can just <em>look</em> at this and tell me what's wrong? Something that could help anyone fix their car — whether they're a total newbie, a weekend wrench-turner, or a master tech."
+          <div class="quote-attr">— Jeremey, on the moment DipCheck was born</div>
+        </div>
+
+        <p class="story-p">
+          That question became an obsession. I taught myself <span class="hl-c">TypeScript</span>, <span class="hl-c">React Native</span>, <span class="hl-c">Python</span>, and eventually <span class="hl-c">Cython and C</span> for native performance. I built DipCheck from my apartment, nights and weekends, while working full-time. What started as "an app that scans a hose" turned into something <strong>far bigger than I ever imagined</strong>.
+        </p>
+
+        <p class="story-p">
+          Today, DipCheck doesn't just identify parts — it gives you a full <span class="hl-y">AI diagnosis with severity ratings</span>, <span class="hl-y">step-by-step DIY repair guides</span>, <span class="hl-y">live parts price comparison</span>, an <span class="hl-y">AI mechanic you can talk to</span>, and a <span class="hl-y">digital garage</span> for every vehicle you own. I went from welding school to building a product that rivals the tech coming out of Google and Microsoft — and this is just the beginning.
+        </p>
+
+        <p class="story-p">
+          Software development isn't just a pivot — <strong>it's my passion through and through</strong>. Every line of code in DipCheck is written to make sure nobody has to sit in a driveway, confused and alone, ever again.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section-pad" id="pricing">
+  <div class="container">
+    <div class="sh">
+      <div class="sh-badge">💎 Simple Pricing</div>
+      <h2>Start Free. <span class="tc-h">Upgrade When You're Ready.</span></h2>
+      <p>No hidden fees. No data selling. Just a tool that helps you fix your car.</p>
+    </div>
+    <div class="price-grid">
+      <div class="price-card">
+        <h3>Freemium</h3>
+        <p class="price-tag">Try DipCheck's camera AI risk-free.</p>
+        <div class="price-val">$0 <span>/ forever</span></div>
+        <ul class="price-list">
+          <li><span class="ck">✓</span> 3 free AI camera scans</li>
+          <li><span class="ck">✓</span> Part identification & urgency preview</li>
+          <li><span class="ck">✓</span> Fallback guidance without AI</li>
+          <li><span class="ck">✓</span> 1 Vehicle in Digital Garage</li>
+        </ul>
+        <button class="btn-plan btn-plan-s">Get Started Free</button>
+      </div>
+      <div class="price-card pop">
+        <div class="pop-badge">Recommended</div>
+        <h3>Pro</h3>
+        <p class="price-tag">Everything you need to diagnose and repair.</p>
+        <div class="price-val">$5.99 <span>/ month</span></div>
+        <ul class="price-list">
+          <li><span class="ck">✓</span> <strong>Unlimited</strong> AI camera scans</li>
+          <li><span class="ck">✓</span> Full repair walkthroughs & tools needed</li>
+          <li><span class="ck">✓</span> Part pricing & value comparisons</li>
+          <li><span class="ck">✓</span> Multi-vehicle Digital Garage</li>
+        </ul>
+        <button class="btn-plan btn-plan-p">Start 7-Day Free Trial</button>
+      </div>
+      <div class="price-card">
+        <h3>Pro+</h3>
+        <p class="price-tag">Advanced features for power users and DIY masters.</p>
+        <div class="price-val">$24.99 <span>/ month</span></div>
+        <ul class="price-list">
+          <li><span class="ck">✓</span> Everything in Pro</li>
+          <li><span class="ck">✓</span> Follow-up AI chat & voice Q&A</li>
+          <li><span class="ck">✓</span> Unlimited vehicles & scan history</li>
+          <li><span class="ck">✓</span> Exportable diagnostic reports</li>
+        </ul>
+        <button class="btn-plan btn-plan-s">Upgrade to Pro+</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="section-pad" id="download">
+  <div class="container">
+    <div class="cta-box">
+      <div class="sh-badge">🚀 Ready to Scan</div>
+      <h2 class="sh" style="margin-bottom:1rem"><span style="font-family:'Outfit',sans-serif;font-size:clamp(2.2rem,4.2vw,3.4rem);font-weight:800">Diagnose Your Car in Seconds.<br /><span class="tc-h">Save Thousands on Repairs.</span></span></h2>
+      <p style="font-size:1.1rem;color:var(--text-muted);max-width:550px;margin:0 auto 2.5rem;line-height:1.7">Download DipCheck for free and start scanning. No credit card. No cloud uploads. Just you, your phone, and your vehicle.</p>
+      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+        <button class="btn-pri" onclick="alert('Coming soon to App Store & Google Play! Run npx expo start --dev-client to test now.')">Download DipCheck Free →</button>
+        <a href="https://github.com/jtalford1228-dev" target="_blank" class="btn-sec"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>View on GitHub</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-brand"><span class="wd">Dip</span><span class="wc">Check</span></div>
+    <ul class="footer-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#story">Our Story</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="https://github.com/jtalford1228-dev" target="_blank">GitHub</a></li>
+    </ul>
+    <div class="footer-copy">&copy; 2026 Truman-dev / Jeremey Alford. All rights reserved.</div>
+  </div>
+</footer>
+
+</div>
+
+<script>
+/* ============================================================
+   PARTICLE CANVAS
+   ============================================================ */
+const cv=document.getElementById('pc'),cx=cv.getContext('2d');let pts=[],mx=-1e3,my=-1e3;
+function rsz(){cv.width=innerWidth;cv.height=innerHeight}
+class P{constructor(){this.x=Math.random()*cv.width;this.y=Math.random()*cv.height;this.vx=(Math.random()-.5)*.4;this.vy=(Math.random()-.5)*.4;this.r=Math.random()*1.6+.8;const c=['88,216,255','51,161,255','255,174,66','47,226,122'];this.c=c[Math.floor(Math.random()*c.length)];this.a=Math.random()*.45+.2}
+update(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>cv.width)this.vx*=-1;if(this.y<0||this.y>cv.height)this.vy*=-1;const dx=this.x-mx,dy=this.y-my,d=Math.sqrt(dx*dx+dy*dy);if(d<160){const f=(160-d)/160*.02;this.vx+=dx*f;this.vy+=dy*f}this.vx*=.99;this.vy*=.99}
+draw(){cx.beginPath();cx.arc(this.x,this.y,this.r,0,Math.PI*2);cx.fillStyle=`rgba(${this.c},${this.a})`;cx.fill()}}
+function init(){pts=[];const n=Math.floor(innerWidth/18);for(let i=0;i<n;i++)pts.push(new P)}
+function render(){cx.clearRect(0,0,cv.width,cv.height);for(let i=0;i<pts.length;i++){pts[i].update();pts[i].draw();for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<120){cx.beginPath();cx.moveTo(pts[i].x,pts[i].y);cx.lineTo(pts[j].x,pts[j].y);cx.strokeStyle=`rgba(88,216,255,${(1-d/120)*.12})`;cx.lineWidth=.5;cx.stroke()}}}requestAnimationFrame(render)}
+addEventListener('resize',()=>{rsz();init()});addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});rsz();init();render();
+
+/* ============================================================
+   NAVBAR SCROLL
+   ============================================================ */
+addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('scrolled',scrollY>40)});
+
+/* ============================================================
+   INTERACTIVE SIMULATOR — Faithful to app/index.tsx scan flow
+   ============================================================ */
+const scenarios={
+  hose:{
+    img:"https://images.unsplash.com/photo-1613214149922-f1809c99b414?auto=format&fit=crop&w=900&q=80",
+    headline:"Cooling leak risk spotted at upper radiator hose.",
+    sev:"urgent",sevClass:"sev-urgent",
+    meta:"Upper Radiator Hose • Cooling • 87% confidence",
+    finding:"Visible coolant weeping is present near the clamp and the hose body looks slightly swollen near the thermostat housing.",
+    actions:["Verify coolant level before driving again","Replace the hose and clamp soon to avoid an overheat event"]
+  },
+  belt:{
+    img:"https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=80",
+    headline:"Accessory belt wear pattern suggests replacement is due soon.",
+    sev:"caution",sevClass:"sev-caution",
+    meta:"Serpentine Belt • Accessory Drive • 82% confidence",
+    finding:"The belt surface shows glazing and edge fraying, which can lead to squeal, slip, or sudden accessory loss.",
+    actions:["Inspect belt routing and tensioner movement","Replace the belt if cracks or frayed cords are visible"]
+  },
+  battery:{
+    img:"https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=900&q=80",
+    headline:"Battery terminal corrosion could affect starting and charging.",
+    sev:"info",sevClass:"sev-info",
+    meta:"Battery Terminal • Electrical • 84% confidence",
+    finding:"Blue-white corrosion buildup around terminal clamp area, which can increase resistance and reduce charging efficiency.",
+    actions:["Disconnect battery and clean terminals safely","Check terminal tightness after cleaning"]
+  }
+};
+
+let currentScenario=null;
+let isLive=false;
+
+function runDemoScan(){
+  const keys=Object.keys(scenarios);
+  const key=keys[Math.floor(Math.random()*keys.length)];
+  const s=scenarios[key];
+  currentScenario=s;
+
+  // Update status banner to "analyzing"
+  const sl=document.getElementById('sim-status-label');
+  const st=document.getElementById('sim-status-text');
+  const ss=document.getElementById('sim-scan-state');
+  const btn=document.getElementById('sim-scan-btn');
+
+  sl.textContent='ANALYZING';
+  st.textContent='Analyzing current frame…';
+  ss.textContent='SCANNING…';
+  btn.textContent='Scanning…';
+
+  // Simulate inference delay
+  setTimeout(()=>{
+    document.getElementById('sim-img').src=s.img;
+    sl.textContent='SYSTEM STATUS';
+    st.textContent=s.headline+' • '+s.meta.split(' • ')[0];
+    ss.textContent='SCAN COMPLETE';
+    btn.textContent='Manual scan';
+
+    // Show diagnosis panel
+    const d=document.getElementById('sim-diag');
+    d.style.display='flex';
+    document.getElementById('sim-swipe').textContent='Swipe down to hide details';
+    document.getElementById('sim-headline').textContent=s.headline;
+    const sevEl=document.getElementById('sim-sev');
+    sevEl.className='sev '+s.sevClass;
+    sevEl.textContent=s.sev;
+    document.getElementById('sim-meta').textContent=s.meta;
+    document.getElementById('sim-finding').textContent=s.finding;
+    document.getElementById('sim-actions').innerHTML=s.actions.map(a=>`<div class="action-row"><div class="a-dot"></div><span class="a-text">${a}</span></div>`).join('');
+  },1200);
+}
+
+function toggleLive(){
+  isLive=!isLive;
+  const btn=document.getElementById('sim-live-btn');
+  const ss=document.getElementById('sim-scan-state');
+  if(isLive){
+    btn.classList.add('emp');
+    btn.textContent='Stop live scan';
+    ss.textContent='LIVE LOOP ON';
+    runDemoScan();
+  }else{
+    btn.classList.remove('emp');
+    btn.textContent='Start live scan';
+    ss.textContent='READY TO SCAN';
+  }
+}
+
+function switchScenario(key){
+  // These tabs map to History/Garage/Account/Settings in the real app
+  // For the demo, just show a scan result
+  if(scenarios[key]) runDemoScan();
+}
+</script>
+</body>
+</html>
