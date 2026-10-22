@@ -1,901 +1,461 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DipCheck — AI Visual Vehicle Diagnostic Scanner</title>
-  <meta name="description" content="Point your camera. Get an instant AI diagnosis. DIY repair steps, parts pricing, and an AI mechanic — all on your phone, privacy-first." />
+  <title>DipCheck — DipCheck Sees What OBD2 Scanners Can't See (Coming Soon)</title>
+  <meta name="description" content="DipCheck sees what OBD2 scanners can't see. Point your phone's camera at dipsticks, leaks, belts, and brakes for plain-English mechanical guidance, DIY repair steps, and fair parts pricing. Coming soon to iOS and Android." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet" />
   <style>
 /* ============================
-   DESIGN TOKENS (from theme.ts)
+   DESIGN TOKENS (from theme.ts + Premium Depth)
    ============================ */
 :root {
-  --bg:#050A13;--bg-alt:#03060B;--surface:#0C1524;--surface2:#16233A;
+  --bg:#03060C;--bg-mid:#071120;--bg-alt:#020408;
+  --surface:rgba(12, 22, 40, 0.72);--surface-solid:#0C1524;--surface2:#16233A;
   --surface-alt:#111C2F;--panel:#0A1322;--panel-alt:#101F34;
-  --border:#274060;--border-light:rgba(88,216,255,.18);--border-glow:rgba(88,216,255,.4);
-  --cyan:#58D8FF;--cyan-soft:rgba(88,216,255,.16);
-  --blue:#33A1FF;--blue-soft:rgba(51,161,255,.18);
-  --orange:#FFAE42;--orange-soft:rgba(255,174,66,.18);
+  --border:rgba(56, 92, 138, 0.42);--border-light:rgba(88,216,255,.22);--border-glow:rgba(88,216,255,.48);
+  --cyan:#58D8FF;--cyan-soft:rgba(88,216,255,.14);
+  --blue:#3B82F6;--blue-soft:rgba(59,130,246,.18);
+  --orange:#F97316;--orange-bright:#FFAE42;--orange-soft:rgba(249,115,22,.18);
   --yellow:#FFD447;--yellow-soft:rgba(255,212,71,.18);
-  --green:#2FE27A;--green-soft:rgba(47,226,122,.18);
+  --green:#2FE27A;--green-soft:rgba(47,226,122,.16);
   --red:#FF5C72;--red-soft:rgba(255,92,114,.18);
-  --text:#F4F8FF;--text-light:#EAF6FF;--text-muted:#93AAC4;--text-dim:#7488A4;
+  --text:#F4F8FF;--text-light:#EAF6FF;--text-muted:#94ACC6;--text-dim:#6E84A3;
   --card-glow:rgba(108,231,255,.16);--line:rgba(108,231,255,.28);
-  --grad-main:linear-gradient(135deg,#58D8FF 0%,#33A1FF 50%,#FFAE42 100%);
-  --grad-gold:linear-gradient(135deg,#F5B324 0%,#E29A18 50%,#CC8208 100%);
-  --grad-cyan:linear-gradient(135deg,#58D8FF 0%,#33A1FF 100%);
-  --r-sm:8px;--r-md:14px;--r-lg:20px;--r-xl:28px;--r-pill:9999px;
+  --grad-main:linear-gradient(135deg,#58D8FF 0%,#3B82F6 48%,#F97316 100%);
+  --grad-gold:linear-gradient(135deg,#FDBA74 0%,#F97316 55%,#EA580C 100%);
+  --grad-cyan:linear-gradient(135deg,#93C5FD 0%,#58D8FF 50%,#3B82F6 100%);
+  --r-sm:10px;--r-md:14px;--r-lg:22px;--r-xl:30px;--r-pill:9999px;
+  --mouse-x:50vw;--mouse-y:35vh;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
-body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden;line-height:1.6}
+body{
+  background-color:var(--bg);
+  background-image:
+    radial-gradient(1100px circle at 15% 8%, rgba(37, 99, 235, 0.16), transparent 65%),
+    radial-gradient(950px circle at 85% 18%, rgba(249, 115, 22, 0.11), transparent 62%),
+    radial-gradient(1200px circle at 50% 55%, rgba(88, 216, 255, 0.07), transparent 70%),
+    linear-gradient(180deg, #03060C 0%, #071120 45%, #040811 100%);
+  background-attachment:fixed;
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  overflow-x:hidden;
+  line-height:1.6;
+}
 ::selection{background:rgba(88,216,255,.3);color:#fff}
 a{color:inherit;text-decoration:none}
 button{font-family:inherit;cursor:pointer;border:none;background:none;outline:none}
 .container{max-width:1280px;margin:0 auto}
-.section-pad{padding:7rem 2rem;position:relative;z-index:2}
+.section-pad{padding:7.5rem 2rem;position:relative;z-index:2}
 
 /* ============================
-   PARTICLE CANVAS
+   ULTRA-PREMIUM BACKGROUND ARCHITECTURE
    ============================ */
-#pc{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.bg-stage{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:0;
+  overflow:hidden;
+}
+/* Precision Architectural Micro-Grid with Radial Vignette */
+.bg-grid{
+  position:absolute;
+  inset:0;
+  background-image:
+    linear-gradient(to right, rgba(88, 216, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(88, 216, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(to right, rgba(59, 130, 246, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(59, 130, 246, 0.025) 1px, transparent 1px);
+  background-size:72px 72px, 72px 72px, 18px 18px, 18px 18px;
+  mask-image:radial-gradient(ellipse 85% 75% at 50% 35%, #000 25%, transparent 100%);
+  -webkit-mask-image:radial-gradient(ellipse 85% 75% at 50% 35%, #000 25%, transparent 100%);
+}
+/* Interactive Cursor Spotlight Aura */
+.bg-spotlight{
+  position:absolute;
+  inset:0;
+  background:radial-gradient(650px circle at var(--mouse-x) var(--mouse-y), rgba(88, 216, 255, 0.085), rgba(249, 115, 22, 0.03) 45%, transparent 75%);
+  transition:background 0.08s linear;
+}
+/* Sweeping Anodized Light Beams */
+.bg-beam{
+  position:absolute;
+  border-radius:50%;
+  filter:blur(90px);
+  opacity:0.55;
+  mix-blend-mode:screen;
+}
+.beam-1{
+  top:-12%;left:8%;width:720px;height:420px;
+  background:radial-gradient(ellipse, rgba(59,130,246,0.26) 0%, rgba(88,216,255,0.12) 45%, transparent 72%);
+  animation:beamFloat 18s ease-in-out infinite alternate;
+}
+.beam-2{
+  top:14%;right:-6%;width:640px;height:520px;
+  background:radial-gradient(ellipse, rgba(249,115,22,0.20) 0%, rgba(255,174,66,0.08) 50%, transparent 74%);
+  animation:beamFloat 22s ease-in-out infinite alternate-reverse;
+}
+.beam-3{
+  bottom:8%;left:22%;width:820px;height:460px;
+  background:radial-gradient(ellipse, rgba(88,216,255,0.14) 0%, rgba(37,99,235,0.08) 55%, transparent 75%);
+  animation:beamFloat 25s ease-in-out infinite alternate;
+}
+@keyframes beamFloat{
+  0%{transform:translate3d(0,0,0) scale(1) rotate(0deg)}
+  50%{transform:translate3d(40px,-30px,0) scale(1.07) rotate(3deg)}
+  100%{transform:translate3d(-30px,35px,0) scale(0.95) rotate(-2deg)}
+}
+#pc{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
 .cw{position:relative;z-index:2}
 
 /* ============================
-   NAV
+   NAV & 3D MOLDED WORDMARK
    ============================ */
-.nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:1.15rem 2rem;transition:all .3s ease}
-.nav.scrolled{background:rgba(5,10,19,.88);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border-light);padding:.8rem 2rem;box-shadow:0 8px 40px rgba(0,0,0,.5)}
-.nav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
-.nav-logo{height:80px;display:flex;align-items:center}
-.nav-logo svg{height:100%;width:auto}
-.nav-links{display:none;gap:2rem;list-style:none;align-items:center}
-.nav-links a{font-size:.9rem;font-weight:500;color:var(--text-muted);transition:color .25s}
-.nav-links a:hover{color:var(--cyan)}
-.nav-cta{padding:.55rem 1.3rem;font-size:.85rem;font-weight:700;color:var(--bg);background:var(--grad-main);border-radius:var(--r-sm);box-shadow:0 0 18px rgba(88,216,255,.35);transition:all .3s}
-.nav-cta:hover{transform:translateY(-1px);box-shadow:0 0 30px rgba(88,216,255,.6)}
-.mob-btn{display:flex;flex-direction:column;gap:5px}
-.mob-btn span{width:24px;height:2px;background:var(--text);border-radius:2px}
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  padding:.85rem 2rem;
+  background:linear-gradient(180deg, rgba(3,6,12,0.82) 0%, rgba(3,6,12,0.25) 100%);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(88,216,255,0.08);
+  transition:all .3s cubic-bezier(.16,1,.3,1);
+}
+.nav.scrolled{
+  background:rgba(4, 9, 18, 0.88);
+  backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);
+  border-bottom:1px solid var(--border-light);
+  padding:.6rem 2rem;
+  box-shadow:0 12px 45px rgba(0,0,0,.65), 0 1px 0 rgba(255,255,255,.05) inset;
+}
+.nav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1.5rem}
+.nav-logo{
+  height:68px;
+  display:flex;
+  align-items:center;
+  transition:transform .28s cubic-bezier(.16,1,.3,1), filter .28s ease;
+  filter:drop-shadow(0 4px 18px rgba(249,115,22,0.18)) drop-shadow(0 0 24px rgba(59,130,246,0.22));
+}
+.nav-logo:hover{
+  transform:translateY(-1px) scale(1.025);
+  filter:drop-shadow(0 6px 22px rgba(249,115,22,0.32)) drop-shadow(0 0 30px rgba(88,216,255,0.35));
+}
+.nav-logo svg{height:100%;width:auto;display:block;overflow:visible}
+.nav-links{display:none;gap:2.4rem;list-style:none;align-items:center}
+.nav-links a{font-size:.93rem;font-weight:600;color:var(--text-muted);transition:color .25s;position:relative;letter-spacing:.01em}
+.nav-links a::after{content:'';position:absolute;left:0;right:0;bottom:-6px;height:2px;background:var(--grad-main);border-radius:2px;transform:scaleX(0);transition:transform .25s ease}
+.nav-links a:hover{color:var(--text-light)}
+.nav-links a:hover::after{transform:scaleX(1)}
+.nav-actions{display:flex;align-items:center;gap:1rem}
+.nav-cta{
+  padding:.68rem 1.45rem;
+  font-size:.88rem;font-weight:800;
+  color:#040811;
+  background:var(--grad-main);
+  border-radius:var(--r-sm);
+  box-shadow:0 4px 22px rgba(88,216,255,.32), 0 1px 0 rgba(255,255,255,.4) inset;
+  transition:all .3s ease;
+  display:inline-flex;align-items:center;gap:.5rem;
+}
+.nav-cta:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(88,216,255,.55), 0 0 20px rgba(249,115,22,.35)}
+.mob-btn{display:flex;flex-direction:column;gap:5px;padding:9px;border-radius:var(--r-sm);border:1px solid var(--border-light);background:rgba(12,21,36,.8)}
+.mob-btn span{width:22px;height:2px;background:var(--text);border-radius:2px;transition:all .3s ease}
+.mob-btn.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.mob-btn.open span:nth-child(2){opacity:0}
+.mob-btn.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+/* Mobile Drawer */
+.mob-drawer{
+  position:fixed;top:82px;left:1rem;right:1rem;
+  background:rgba(8,16,30,.96);
+  backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border:1px solid var(--border-glow);
+  border-radius:var(--r-lg);
+  padding:1.4rem;z-index:999;
+  display:flex;flex-direction:column;gap:.85rem;
+  box-shadow:0 28px 70px rgba(0,0,0,.85);
+  transform:translateY(-16px);opacity:0;pointer-events:none;transition:all .3s ease;
+}
+.mob-drawer.open{transform:translateY(0);opacity:1;pointer-events:auto}
+.mob-drawer a{padding:.8rem 1rem;border-radius:var(--r-sm);font-weight:600;color:var(--text-light);background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);transition:all .2s}
+.mob-drawer a:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-soft)}
+
+@media (min-width: 900px) {
+  .nav-links{display:flex}
+  .mob-btn{display:none}
+  .mob-drawer{display:none !important}
+}
 
 /* ============================
    HERO
    ============================ */
-.hero{min-height:100vh;padding:8rem 2rem 5rem;display:flex;align-items:center;position:relative;overflow:hidden}
-.hero-glow{position:absolute;border-radius:50%;pointer-events:none;filter:blur(60px)}
-.hg1{top:-10%;left:18%;width:650px;height:650px;background:radial-gradient(circle,rgba(88,216,255,.12) 0%,transparent 70%);animation:gf 12s ease-in-out infinite alternate}
-.hg2{bottom:5%;right:8%;width:500px;height:500px;background:radial-gradient(circle,rgba(255,174,66,.08) 0%,transparent 70%);animation:gf 16s ease-in-out infinite alternate-reverse}
-@keyframes gf{0%{transform:translate(0,0) scale(1)}50%{transform:translate(35px,-30px) scale(1.06)}100%{transform:translate(-25px,35px) scale(.94)}}
-.hero-grid{display:flex;flex-direction:column;align-items:center;text-align:center;max-width:900px;margin:0 auto;position:relative;z-index:2}
-.hero-pill{display:inline-flex;align-items:center;gap:.55rem;padding:.4rem 1rem;background:rgba(88,216,255,.08);border:1px solid rgba(88,216,255,.25);border-radius:var(--r-pill);font-size:.8rem;font-weight:600;color:var(--cyan);margin-bottom:1.5rem}
-.pulse-dot{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 10px var(--green);animation:pd 2s infinite}
+.hero{min-height:94vh;padding:10.5rem 2rem 5.5rem;display:flex;align-items:center;position:relative;overflow:hidden}
+.hero-grid{display:flex;flex-direction:column;align-items:center;text-align:center;max-width:960px;margin:0 auto;position:relative;z-index:2}
+.hero-pill{
+  display:inline-flex;align-items:center;gap:.6rem;
+  padding:.48rem 1.2rem;
+  background:linear-gradient(90deg, rgba(88,216,255,.12), rgba(59,130,246,.12), rgba(249,115,22,.12));
+  border:1px solid rgba(88,216,255,.32);
+  border-radius:var(--r-pill);
+  font-family:'JetBrains Mono',monospace;
+  font-size:.78rem;font-weight:700;letter-spacing:.8px;
+  color:var(--cyan);
+  margin-bottom:1.8rem;
+  box-shadow:0 0 30px rgba(88,216,255,.15), 0 1px 0 rgba(255,255,255,.12) inset;
+  backdrop-filter:blur(12px);
+}
+.pulse-dot{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 12px var(--green);animation:pd 2s infinite}
 @keyframes pd{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.4}}
-.hero h1{font-family:'Outfit',sans-serif;font-size:clamp(2.8rem,5.5vw,4.6rem);font-weight:900;line-height:1.06;letter-spacing:-.03em;margin-bottom:1.5rem}
+.hero h1{
+  font-family:'Outfit',sans-serif;
+  font-size:clamp(2.85rem,5.8vw,4.85rem);
+  font-weight:900;
+  line-height:1.05;
+  letter-spacing:-.03em;
+  margin-bottom:1.6rem;
+  text-shadow:0 12px 40px rgba(0,0,0,0.5);
+}
 .hero h1 .tg{background:var(--grad-gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .hero h1 .tc{background:var(--grad-cyan);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.hero-sub{font-size:1.15rem;color:var(--text-muted);line-height:1.75;max-width:560px;margin-bottom:2.5rem}
-.hero-btns{display:flex;gap:1.2rem;flex-wrap:wrap;margin-bottom:3rem;justify-content:center}
-.btn-pri{padding:.9rem 2rem;font-size:1rem;font-weight:700;color:var(--bg);background:var(--grad-main);border-radius:var(--r-md);box-shadow:0 8px 30px rgba(88,216,255,.4);display:flex;align-items:center;gap:.6rem;transition:all .3s}
-@media (hover: hover) { .btn-pri:hover{transform:translateY(-3px);box-shadow:0 15px 45px rgba(88,216,255,.6)} }
-.btn-pri:active{transform:scale(0.96)}
-.btn-sec{padding:.9rem 2rem;font-size:1rem;font-weight:600;color:var(--text-light);background:rgba(12,21,36,.7);border:1.5px solid var(--border);border-radius:var(--r-md);display:flex;align-items:center;gap:.6rem;transition:all .3s}
-@media (hover: hover) { .btn-sec:hover{border-color:var(--cyan);background:rgba(88,216,255,.08);transform:translateY(-2px)} }
-.btn-sec:active{transform:scale(0.96)}
-.hero-proof{display:flex;gap:2.5rem;padding-top:1.5rem;border-top:1px solid rgba(39,64,96,.4);justify-content:center}
-.proof-item .pv{font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:800}
-.proof-item .pl{font-size:.78rem;color:var(--text-dim);font-weight:500}
-.ac{color:var(--cyan)}.ag{color:var(--green)}.ao{color:var(--orange)}
+.hero-sub{
+  font-size:clamp(1.08rem,1.8vw,1.24rem);
+  color:var(--text-muted);
+  line-height:1.78;
+  max-width:690px;
+  margin-bottom:2.8rem;
+}
+.hero-btns{display:flex;gap:1.25rem;flex-wrap:wrap;margin-bottom:3.8rem;justify-content:center}
+.btn-pri{
+  padding:1.02rem 2.25rem;
+  font-size:1.02rem;font-weight:800;
+  color:#040811;
+  background:var(--grad-main);
+  border-radius:var(--r-md);
+  box-shadow:0 10px 35px rgba(88,216,255,.38), 0 1px 0 rgba(255,255,255,.45) inset;
+  display:inline-flex;align-items:center;gap:.65rem;
+  transition:all .3s cubic-bezier(.16,1,.3,1);
+}
+@media (hover: hover) {
+  .btn-pri:hover{
+    transform:translateY(-3px);
+    box-shadow:0 18px 48px rgba(88,216,255,.55), 0 0 28px rgba(249,115,22,.35);
+  }
+}
+.btn-pri:active{transform:scale(0.97)}
+.btn-sec{
+  padding:1.02rem 2.25rem;
+  font-size:1.02rem;font-weight:700;
+  color:var(--text-light);
+  background:rgba(12, 22, 40, 0.72);
+  backdrop-filter:blur(16px);
+  border:1.5px solid var(--border-light);
+  border-radius:var(--r-md);
+  box-shadow:0 8px 28px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.08) inset;
+  display:inline-flex;align-items:center;gap:.65rem;
+  transition:all .3s cubic-bezier(.16,1,.3,1);
+}
+@media (hover: hover) {
+  .btn-sec:hover{
+    border-color:var(--cyan);
+    background:rgba(88,216,255,.1);
+    transform:translateY(-2px);
+    box-shadow:0 12px 34px rgba(88,216,255,.2);
+  }
+}
+.btn-sec:active{transform:scale(0.97)}
 
-
-/* ============================
-   PHONE SIMULATOR (True 1:1 matching app/index.tsx)
-   ============================ */
-.phone-frame{position:relative;width:390px;height:844px;margin:0 auto;border-radius:44px;background:#020509;padding:12px;box-shadow:0 0 0 1.5px rgba(108,231,255,0.28),0 30px 90px rgba(0,0,0,0.9),0 0 60px rgba(108,231,255,0.15);transform-origin:top center}
-.phone-screen{border-radius:36px;background:#050A13;overflow:hidden;border:1px solid rgba(255,255,255,.07);width:100%;height:100%;display:flex;flex-direction:column;position:relative}
-.phone-notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:120px;height:30px;background:#000;border-radius:15px;z-index:100}
-
-.safe-area{flex:1;display:flex;flex-direction:column;padding:48px 16px 16px;z-index:10}
-.app-top{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
-.app-wordmark{font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;letter-spacing:-0.5px;padding-left:4px}
-.app-wordmark .wd{color:#F5B324}.app-wordmark .wc{color:#2878DD}
-.app-tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
-.app-tab{padding:10px 16px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;white-space:nowrap;background:rgba(6,16,29,0.82);border:1px solid rgba(108,231,255,0.28);color:#F4F8FF}
-.app-tab.active-tab{background:#FFD447;border-color:#FFD447;color:#09111D}
-
-.scan-banner{border-radius:24px;border:1px solid rgba(108,231,255,0.28);background:rgba(0,194,255,0.12);padding:12px 14px;display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
-.scan-banner-label{color:#6CE7FF;font-size:11px;font-weight:900;letter-spacing:1.4px;text-transform:uppercase}
-.scan-banner-text{color:#F4F8FF;font-size:14px;font-weight:700;line-height:20px}
-
-.vehicle-pill{align-self:flex-start;padding:12px 14px;border-radius:18px;border:1px solid rgba(108,231,255,0.28);background:rgba(6,16,29,0.82);display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
-.vehicle-pill-label{color:#FFD447;font-size:11px;font-weight:800;letter-spacing:1px}
-.vehicle-pill-value{color:#F4F8FF;font-size:15px;font-weight:700}
-
-.mini-stats{display:flex;gap:8px;margin-bottom:12px}
-.mini-stat{flex:1;padding:12px;border-radius:12px;background:rgba(5,18,32,0.74);border:1px solid rgba(108,231,255,0.28)}
-.mini-stat-label{color:#A1B7D3;font-size:10px;letter-spacing:1px;text-transform:uppercase}
-.mini-stat-val{color:#F4F8FF;font-size:13px;font-weight:700;margin-top:2px}
-
-.viewfinder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:0;background:#050A13}
-.viewfinder img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.6}
-.camera-scrim{position:absolute;inset:0;background:rgba(2,8,18,0.28)}
-
-.reticle-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:none;z-index:5}
-.reticle-outer{width:86%;aspect-ratio:1.02;border-radius:24px;border:1.5px solid rgba(108,231,255,0.78);background:rgba(14,64,102,0.1);display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(88,216,255,0.34)}
-.reticle-inner{width:62%;height:62%;border-radius:18px;border:1px solid rgba(255,212,71,0.8)}
-.reticle-caption-row{width:92%;display:flex;justify-content:space-between;align-items:center;gap:16px}
-.rc-l{color:#F4F8FF;font-size:13px;font-weight:600;flex:1}
-.rc-r{color:#6CE7FF;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
-
-.laser{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#6CE7FF,transparent);box-shadow:0 0 15px #6CE7FF;z-index:20;animation:ls 3s ease-in-out infinite}
-@keyframes ls{0%{top:8%;opacity:0}15%{opacity:1}85%{opacity:1}100%{top:92%;opacity:0}}
-
-.drawer-area{display:flex;flex-direction:column;gap:12px;z-index:30}
-.swipe-hint-row{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0}
-.drawer-handle{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,0.25)}
-.swipe-hint-text{color:#A1B7D3;font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase}
-
-.diag-panel{border-radius:24px;border:1px solid rgba(108,231,255,0.28);background:#0A1322;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 18px rgba(0,0,0,0.3)}
-.diag-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.diag-title-wrap{flex:1;display:flex;flex-direction:column;gap:6px}
-.diag-eyebrow{color:#FFD447;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
-.diag-headline{color:#F4F8FF;font-size:20px;line-height:25px;font-weight:800}
-.diag-meta{color:#6CE7FF;font-size:13px;font-weight:700}
-.diag-finding{color:#F4F8FF;font-size:14px;line-height:20px}
-
-.sev{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
-.sev-urgent{background:rgba(255,174,66,0.18);color:#FFC980;border:1px solid rgba(255,174,66,0.3)}
-.sev-caution{background:rgba(255,212,71,0.18);color:#FFE08A;border:1px solid rgba(255,212,71,0.3)}
-.sev-info{background:rgba(51,161,255,0.18);color:#7DD3FC;border:1px solid rgba(51,161,255,0.3)}
-
-.action-dots{display:flex;flex-direction:column;gap:6px}
-.action-row{display:flex;align-items:flex-start;gap:9px}
-.a-dot{width:7px;height:7px;border-radius:999px;background:#FFD447;margin-top:6px;flex-shrink:0}
-.a-text{color:#A1B7D3;font-size:13px;line-height:18px}
-
-.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-.action-pill{padding:11px 14px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;border:1px solid rgba(108,231,255,0.28);background:rgba(6,16,29,0.86);color:#F4F8FF;transition:opacity 0.2s}
-.action-pill.emp{background:#FFD447;border-color:#FFD447;color:#09111D}
-
-.ctrl-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:4px}
+/* Hero Proof Strip */
+.hero-proof{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:1.5rem;
+  width:100%;
+  max-width:880px;
+  padding:1.65rem 2rem;
+  background:linear-gradient(145deg, rgba(14,26,48,0.72), rgba(7,14,26,0.88));
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--border-light);
+  border-radius:var(--r-lg);
+  box-shadow:0 20px 55px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.08) inset;
+}
+.proof-item{display:flex;flex-direction:column;align-items:center;gap:.25rem;position:relative}
+.proof-item:not(:last-child)::after{
+  content:'';position:absolute;right:-0.75rem;top:15%;bottom:15%;width:1px;
+  background:linear-gradient(180deg,transparent,rgba(88,216,255,0.22),transparent);
+}
+.proof-item .pv{font-family:'JetBrains Mono',monospace;font-size:1.65rem;font-weight:800;letter-spacing:-.02em}
+.proof-item .pl{font-size:.76rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.8px}
+.ac{color:var(--cyan)}.ag{color:var(--green)}.ao{color:var(--orange-bright)}.ay{color:var(--yellow)}
 
 /* ============================
    SECTION HEADERS
    ============================ */
-.sh{text-align:center;max-width:740px;margin:0 auto 4rem}
-.sh-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.38rem 1rem;border-radius:var(--r-pill);background:var(--cyan-soft);border:1px solid var(--border-light);font-size:.78rem;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:1.2rem}
-.sh h2{font-family:'Outfit',sans-serif;font-size:clamp(2rem,4vw,3.2rem);font-weight:800;line-height:1.15;letter-spacing:-.02em;margin-bottom:1rem}
-.sh p{font-size:1.1rem;color:var(--text-muted);line-height:1.7}
+.sh{text-align:center;max-width:760px;margin:0 auto 4.2rem}
+.sh-badge{
+  display:inline-flex;align-items:center;gap:.45rem;
+  padding:.42rem 1.1rem;
+  border-radius:var(--r-pill);
+  background:linear-gradient(90deg, rgba(88,216,255,.14), rgba(59,130,246,.14));
+  border:1px solid var(--border-light);
+  font-family:'JetBrains Mono',monospace;
+  font-size:.76rem;font-weight:700;color:var(--cyan);
+  text-transform:uppercase;letter-spacing:1.4px;
+  margin-bottom:1.25rem;
+  box-shadow:0 4px 20px rgba(88,216,255,.12);
+}
+.sh h2{font-family:'Outfit',sans-serif;font-size:clamp(2.1rem,4.2vw,3.35rem);font-weight:900;line-height:1.12;letter-spacing:-.02em;margin-bottom:1.1rem}
+.sh p{font-size:1.1rem;color:var(--text-muted);line-height:1.72}
 .tc-h{background:var(--grad-cyan);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tg-h{background:var(--grad-gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 
 /* ============================
-   FEATURES GRID
+   FEATURES GRID (GLASSMORPHISM)
    ============================ */
-.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
-.feat-card{background:linear-gradient(145deg,rgba(12,21,36,.85),rgba(8,17,29,.95));border:1px solid var(--border);border-radius:var(--r-lg);padding:2.2rem 1.8rem;overflow:hidden;transition:all .4s ease;position:relative}
-.feat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:0;transition:opacity .4s}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.65rem}
+.feat-card{
+  background:linear-gradient(155deg, rgba(16, 29, 52, 0.76) 0%, rgba(8, 15, 28, 0.9) 100%);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  padding:2.3rem 1.9rem;
+  overflow:hidden;
+  transition:all .38s cubic-bezier(.16,1,.3,1);
+  position:relative;
+  display:flex;flex-direction:column;
+  box-shadow:0 16px 40px rgba(0,0,0,.4), 0 1px 0 rgba(255,255,255,.07) inset;
+}
+.feat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--cyan),var(--orange),transparent);
+  opacity:0;transition:opacity .4s;
+}
 @media (hover: hover) {
-  .feat-card:hover{transform:translateY(-7px);border-color:var(--cyan);box-shadow:0 20px 55px rgba(0,0,0,.5),0 0 25px rgba(88,216,255,.12)}
+  .feat-card:hover{
+    transform:translateY(-8px);
+    border-color:var(--border-glow);
+    box-shadow:0 24px 60px rgba(0,0,0,.65), 0 0 32px rgba(88,216,255,.14), 0 1px 0 rgba(255,255,255,.15) inset;
+  }
   .feat-card:hover::before{opacity:1}
 }
-.feat-card:active{transform:scale(0.98);border-color:var(--cyan);box-shadow:0 0 15px rgba(88,216,255,.15)}
-.feat-icon{width:54px;height:54px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:1.3rem}
-.fi-c{background:var(--cyan-soft);border:1px solid rgba(88,216,255,.3)}
-.fi-o{background:var(--orange-soft);border:1px solid rgba(255,174,66,.3)}
-.fi-g{background:var(--green-soft);border:1px solid rgba(47,226,122,.3)}
-.fi-y{background:var(--yellow-soft);border:1px solid rgba(255,212,71,.3)}
-.fi-b{background:var(--blue-soft);border:1px solid rgba(51,161,255,.3)}
-.fi-r{background:var(--red-soft);border:1px solid rgba(255,92,114,.3)}
-.feat-card h3{font-size:1.2rem;font-weight:700;margin-bottom:.6rem;color:var(--text-light)}
-.feat-card p{font-size:.92rem;color:var(--text-muted);line-height:1.6}
-
-/* ============================
-   ORIGIN STORY
-   ============================ */
-.story{background:linear-gradient(180deg,transparent,rgba(12,21,36,.6),transparent)}
-.story-grid{display:grid;grid-template-columns:.45fr .55fr;gap:4rem;align-items:center}
-.story-portrait{position:relative;display:flex;align-items:center;justify-content:center}
-.portrait-frame{width:320px;height:380px;border-radius:var(--r-xl);background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;box-shadow:0 25px 70px rgba(0,0,0,.6),0 0 40px rgba(88,216,255,.1)}
-.portrait-frame .initials{font-family:'Outfit',sans-serif;font-size:6rem;font-weight:900;background:var(--grad-gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent;user-select:none}
-.portrait-badge{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);padding:.5rem 1.5rem;border-radius:var(--r-pill);background:var(--surface);border:1px solid var(--border-glow);font-family:'JetBrains Mono',monospace;font-size:.8rem;font-weight:700;color:var(--cyan);white-space:nowrap;box-shadow:0 8px 25px rgba(0,0,0,.5)}
-.story-content{display:flex;flex-direction:column;gap:1.5rem}
-.story-name{font-family:'Outfit',sans-serif;font-size:2.2rem;font-weight:900;color:var(--text-light)}
-.story-role{font-size:1rem;color:var(--cyan);font-weight:700;margin-top:-.75rem}
-.story-p{font-size:1.02rem;color:var(--text-muted);line-height:1.75}
-.story-p strong{color:var(--text-light)}
-.story-p .hl-y{color:var(--yellow);font-weight:700}
-.story-p .hl-c{color:var(--cyan);font-weight:700}
-.quote-block{padding:1.5rem;background:var(--surface);border-left:3px solid var(--yellow);border-radius:0 var(--r-md) var(--r-md) 0;font-style:italic;color:var(--text-light);font-size:1.08rem;line-height:1.65}
-.quote-attr{font-style:normal;font-size:.85rem;color:var(--text-dim);margin-top:.5rem;font-weight:600}
-
-/* ============================
-   PRICING
-   ============================ */
-.price-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem;max-width:1280px;margin:0 auto}
-.price-card{background:linear-gradient(145deg,rgba(12,21,36,.85),rgba(8,17,29,.95));border:1px solid var(--border);border-radius:var(--r-xl);padding:2.2rem 1.6rem;display:flex;flex-direction:column;transition:all .35s}
-@media (hover: hover) { .price-card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 25px rgba(88,216,255,.15)} }
-.price-card:active{transform:scale(0.98);box-shadow:0 0 15px rgba(88,216,255,.15);border-color:var(--cyan)}
-.price-card.pop{}
-.pop-badge{display:inline-block;padding:.3rem 1rem;border-radius:var(--r-pill);background:var(--grad-main);color:var(--bg);font-size:.72rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:1rem;align-self:flex-start}
-.price-card h3{font-size:1.5rem;font-weight:800;color:var(--text-light);margin-bottom:.4rem}
-.price-tag{color:var(--text-muted);font-size:.9rem;margin-bottom:1rem}
-.price-val{font-family:'JetBrains Mono',monospace;font-size:2.5rem;font-weight:900;color:var(--text-light);margin-bottom:1.5rem}
-.price-val span{font-size:.95rem;color:var(--text-dim);font-weight:500}
-.price-list{list-style:none;display:flex;flex-direction:column;gap:.75rem;margin-bottom:2rem;flex:1}
-.price-list li{display:flex;align-items:center;gap:.6rem;font-size:.9rem;color:var(--text-light)}
-.price-list .ck{color:var(--green);font-weight:900}
-.btn-plan{width:100%;padding:.9rem;border-radius:var(--r-md);font-weight:700;font-size:.92rem;text-align:center;transition:all .3s}
-.btn-plan-p{background:var(--grad-main);color:var(--bg)}
-@media (hover: hover) { .btn-plan-p:hover{box-shadow:0 0 35px rgba(88,216,255,.6);transform:translateY(-2px)} }
-.btn-plan-p:active, .btn-plan-s:active{transform:scale(0.96)}
-.btn-plan-s{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text-light)}
-.btn-plan-s:hover{border-color:var(--cyan);background:var(--cyan-soft)}
-
-/* ============================
-   FINAL CTA
-   ============================ */
-.cta-box{background:linear-gradient(135deg,rgba(12,21,36,.95),rgba(5,10,19,.98));border:1px solid var(--border-glow);border-radius:var(--r-xl);padding:5rem 3rem;text-align:center;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.7),0 0 50px rgba(88,216,255,.12)}
-
-/* ============================
-   FOOTER
-   ============================ */
-.footer{padding:3.5rem 2rem 2rem;border-top:1px solid rgba(255,255,255,.06);background:var(--bg-alt)}
-.footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem}
-.footer-brand{font-family:'Outfit',sans-serif;font-size:1.1rem;font-weight:900}
-.footer-brand .wd{color:#F5B324}.footer-brand .wc{color:#2878DD}
-.footer-links{display:flex;gap:2rem;list-style:none}
-.footer-links a{font-size:.85rem;color:var(--text-muted);transition:color .2s}
-.footer-links a:hover{color:var(--cyan)}
-.footer-copy{font-size:.8rem;color:var(--text-dim)}
-
-/* ============================
-   MOBILE-FIRST BASE OVERRIDES
-   (320px+ default, then scale up)
-   ============================ */
-.container{padding:0 1rem}
-.section-pad{padding:3.5rem 1rem}
-.nav{padding:.8rem 1rem}
-.nav.scrolled{padding:.65rem 1rem}
-
-/* Mobile nav menu */
-.nav-links.open{display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:rgba(5,10,19,.96);backdrop-filter:blur(20px);padding:1.5rem 2rem;gap:1.2rem;border-bottom:1px solid var(--border-light);box-shadow:0 12px 40px rgba(0,0,0,.6)}
-.nav-links.open li{width:100%}
-.nav-links.open a{display:block;padding:.6rem 0;font-size:1rem}
-
-/* Hero — mobile */
-.hero{min-height:auto;padding:5.5rem 1rem 2.5rem}
-.hero-grid{display:flex;flex-direction:column;gap:2.5rem;text-align:center}
-.hero-sub{font-size:1rem;margin:0 auto 2rem;max-width:100%}
-.hero-btns{justify-content:center;gap:.8rem}
-.btn-pri,.btn-sec{padding:.75rem 1.4rem;font-size:.9rem;width:100%;justify-content:center}
-.hero-proof{justify-content:center;gap:1.5rem;flex-wrap:wrap}
-.proof-item .pv{font-size:1.15rem}
-.proof-item .pl{font-size:.72rem}
-
-/* Phone frame — mobile */
-.phone-frame{transform:scale(0.62);transform-origin:top center;margin:0 auto -140px}
-
-/* Features — mobile */
-.feat-grid{grid-template-columns:1fr;gap:1rem}
-.feat-card{padding:1.6rem 1.4rem}
-
-/* Story — mobile */
-.story-grid{grid-template-columns:1fr;text-align:center;gap:2rem}
-.story-portrait{order:-1}
-.story-content{text-align:center}
-.portrait-frame{width:220px;height:260px}
-.portrait-frame .initials{font-size:4rem}
-.portrait-badge{font-size:.7rem;padding:.4rem 1rem}
-.story-name{font-size:1.6rem}
-.quote-block{text-align:left;font-size:.95rem;padding:1.2rem}
-
-/* Pricing — mobile */
-.price-grid{grid-template-columns:1fr;gap:1.2rem;max-width:400px}
-.price-card{padding:1.8rem 1.4rem}
-.price-val{font-size:2rem}
-
-/* CTA — mobile */
-.cta-box{padding:2.5rem 1.2rem;border-radius:var(--r-lg)}
-
-/* Footer — mobile */
-.footer{padding:2.5rem 1rem 1.5rem}
-.footer-inner{flex-direction:column;text-align:center;gap:1rem}
-.footer-links{flex-wrap:wrap;justify-content:center;gap:1.2rem}
-
-/* Section headers — mobile */
-.sh{margin-bottom:2.5rem}
-.sh h2{font-size:clamp(1.6rem,6vw,2.2rem)}
-.sh p{font-size:.95rem}
-.sh-badge{font-size:.7rem;padding:.3rem .8rem}
-
-/* ============================
-   TABLET (768px+)
-   ============================ */
-@media(min-width:768px){
-  .container{padding:0 2rem}
-  .section-pad{padding:5rem 2rem}
-  .nav{padding:1rem 2rem}
-  .nav.scrolled{padding:.8rem 2rem}
-  .nav-links{display:flex}
-  .nav-links.open{display:flex;flex-direction:row;position:static;background:none;backdrop-filter:none;padding:0;gap:2rem;border-bottom:none;box-shadow:none}
-  .mob-btn{display:none}
-  .hero{padding:7rem 2rem 4rem}
-  .hero-sub{margin:0 auto 2.5rem;max-width:560px}
-  .btn-pri,.btn-sec{width:auto;padding:.9rem 2rem;font-size:1rem}
-  .hero-proof{justify-content:flex-start;flex-wrap:nowrap;gap:2.5rem}
-  .proof-item .pv{font-size:1.4rem}
-  .phone-frame{transform:scale(0.75);margin:0 auto -80px}
-  .feat-grid{grid-template-columns:repeat(2,1fr);gap:1.5rem}
-  .feat-card{padding:2rem 1.6rem}
-  .story-grid{gap:3rem}
-  .portrait-frame{width:280px;height:340px}
-  .portrait-frame .initials{font-size:5rem}
-  .story-name{font-size:2rem}
-  .price-grid{grid-template-columns:repeat(2,1fr);max-width:720px;gap:1.5rem}
-  .price-card{padding:2rem 1.6rem}
-  .price-val{font-size:2.3rem}
-  .cta-box{padding:4rem 2.5rem}
-  .footer{padding:3rem 2rem 2rem}
-  .footer-inner{flex-direction:row}
-  .sh{margin-bottom:3.5rem}
-  .sh h2{font-size:clamp(2rem,4vw,3rem)}
-  .sh p{font-size:1.05rem}
+.feat-card:active{transform:scale(0.98);border-color:var(--cyan)}
+.feat-icon{
+  width:56px;height:56px;border-radius:var(--r-md);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;margin-bottom:1.4rem;
+  box-shadow:0 8px 20px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.15) inset;
+}
+.fi-c{background:var(--cyan-soft);border:1px solid rgba(88,216,255,.35);color:var(--cyan)}
+.fi-o{background:var(--orange-soft);border:1px solid rgba(249,115,22,.38);color:var(--orange-bright)}
+.fi-g{background:var(--green-soft);border:1px solid rgba(47,226,122,.35);color:var(--green)}
+.fi-y{background:var(--yellow-soft);border:1px solid rgba(255,212,71,.35);color:var(--yellow)}
+.fi-b{background:var(--blue-soft);border:1px solid rgba(59,130,246,.38);color:#60A5FA}
+.fi-r{background:var(--red-soft);border:1px solid rgba(255,92,114,.35);color:var(--red)}
+.feat-card h3{font-family:'Outfit',sans-serif;font-size:1.28rem;font-weight:800;margin-bottom:.65rem;color:var(--text-light)}
+.feat-card p{font-size:.94rem;color:var(--text-muted);line-height:1.68;flex:1}
+.feat-tag{
+  margin-top:1.4rem;padding-top:.95rem;
+  border-top:1px solid rgba(56,92,138,.35);
+  font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:600;
+  color:var(--cyan);display:flex;align-items:center;justify-content:space-between;
 }
 
 /* ============================
-   DESKTOP (1024px+)
+   BEYOND THE OBD2 PORT COMPARISON
    ============================ */
-@media(min-width:1024px){
-  .hero{min-height:100vh;padding:8rem 2rem 5rem}
-  .phone-frame{transform:scale(0.9);margin:0 auto}
-  .feat-grid{grid-template-columns:repeat(3,1fr)}
-  .story-grid{grid-template-columns:.45fr .55fr;gap:4rem;text-align:left}
-  .story-content{text-align:left}
-  .portrait-frame{width:320px;height:380px}
-  .portrait-frame .initials{font-size:6rem}
-  .story-name{font-size:2.2rem}
-  .price-grid{grid-template-columns:repeat(4,1fr);max-width:1280px}
-  .price-card{padding:2.2rem 1.6rem}
-  .price-val{font-size:2.5rem}
-  .cta-box{padding:5rem 3rem}
-  .section-pad{padding:7rem 2rem}
-  .sh{margin-bottom:4rem}
-  .sh h2{font-size:clamp(2rem,4vw,3.2rem)}
-  .sh p{font-size:1.1rem}
+.compare-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:2rem;
+  align-items:stretch;
+}
+.compare-card{
+  background:linear-gradient(155deg, rgba(16, 29, 52, 0.78), rgba(8, 15, 28, 0.92));
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--border);
+  border-radius:var(--r-xl);
+  padding:2.5rem 2.2rem;
+  display:flex;flex-direction:column;
+  box-shadow:0 20px 50px rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.07) inset;
+  position:relative;
+  overflow:hidden;
+}
+.compare-card.obd-blind{
+  border-color:rgba(255,92,114,.32);
+  background:linear-gradient(160deg, rgba(32, 16, 28, 0.72), rgba(8, 13, 24, 0.94));
+}
+.compare-card.dip-sees{
+  border-color:var(--border-glow);
+  background:linear-gradient(160deg, rgba(16, 36, 64, 0.88), rgba(8, 16, 30, 0.95));
+  box-shadow:0 24px 65px rgba(0,0,0,.65), 0 0 38px rgba(88,216,255,.16), 0 1px 0 rgba(255,255,255,.14) inset;
+}
+.compare-pill{
+  display:inline-flex;align-items:center;gap:.5rem;
+  padding:.38rem .95rem;border-radius:var(--r-pill);
+  font-family:'JetBrains Mono',monospace;font-size:.74rem;font-weight:800;
+  letter-spacing:1px;text-transform:uppercase;
+  align-self:flex-start;margin-bottom:1.2rem;
+}
+.cp-red{background:var(--red-soft);color:var(--red);border:1px solid rgba(255,92,114,.38)}
+.cp-cyan{background:var(--cyan-soft);color:var(--cyan);border:1px solid rgba(88,216,255,.4)}
+.compare-card h3{
+  font-family:'Outfit',sans-serif;font-size:1.65rem;font-weight:800;
+  color:var(--text-light);margin-bottom:.65rem;line-height:1.2;
+}
+.compare-sub{font-size:.96rem;color:var(--text-muted);margin-bottom:1.6rem;line-height:1.65}
+.compare-list{list-style:none;display:flex;flex-direction:column;gap:1rem;flex:1}
+.compare-list li{
+  display:flex;align-items:flex-start;gap:.85rem;
+  padding:.85rem 1rem;border-radius:var(--r-md);
+  background:rgba(4,9,18,.55);border:1px solid rgba(255,255,255,.06);
+  font-size:.93rem;color:var(--text-light);line-height:1.5;
+}
+.compare-list .ci-x{
+  width:24px;height:24px;border-radius:50%;
+  background:var(--red-soft);color:var(--red);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:.8rem;flex-shrink:0;margin-top:2px;
+}
+.compare-list .ci-ok{
+  width:24px;height:24px;border-radius:50%;
+  background:var(--green-soft);color:var(--green);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:.82rem;flex-shrink:0;margin-top:2px;
 }
 
 /* ============================
-   LARGE DESKTOP (1280px+)
+   COMING SOON ROADMAP
    ============================ */
-@media(min-width:1280px){
-  .hero h1{font-size:4.6rem}
+.roadmap-wrap{
+  background:linear-gradient(155deg, rgba(14, 27, 48, 0.85), rgba(6, 12, 24, 0.94));
+  border:1px solid var(--border-glow);
+  border-radius:var(--r-xl);
+  padding:3.2rem 2.6rem;
+  box-shadow:0 28px 75px rgba(0,0,0,.65), 0 0 42px rgba(88,216,255,.12), 0 1px 0 rgba(255,255,255,.1) inset;
+  position:relative;
 }
-
-/* Persona pills in phone sim */
-.persona-rail{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
-.persona-pill{padding:8px 12px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;background:rgba(6,16,29,0.82);border:1px solid rgba(108,231,255,0.28);color:#F4F8FF;cursor:pointer;transition:all .2s}
-.persona-pill.active-persona{background:#FFD447;border-color:#FFD447;color:#09111D}
-.persona-pill:hover:not(.active-persona){border-color:rgba(88,216,255,0.6)}
-
-/* Shutter button */
-.shutter-wrap{display:flex;align-items:center;justify-content:center;gap:16px;padding:8px 0}
-.shutter-btn{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#58D8FF,#33A1FF);border:4px solid rgba(108,231,255,0.5);box-shadow:0 0 28px rgba(88,216,255,0.45),0 0 8px rgba(88,216,255,0.3) inset;cursor:pointer;transition:all .2s;position:relative;display:flex;align-items:center;justify-content:center}
-.shutter-btn:hover{transform:scale(1.05);box-shadow:0 0 40px rgba(88,216,255,0.65)}
-.shutter-btn:active{transform:scale(0.95)}
-.shutter-btn::after{content:'';width:56px;height:56px;border-radius:50%;border:2px solid rgba(255,255,255,0.35);position:absolute}
-.shutter-pill{border:1px solid rgba(108,231,255,0.28);border-radius:14px;padding:10px;min-height:40px;display:flex;align-items:center;justify-content:center;background:rgba(6,16,29,0.82);color:#F4F8FF;font-size:11px;font-weight:900;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;transition:all .2s}
-.shutter-pill:hover{border-color:rgba(88,216,255,0.6)}
-.shutter-pill.active-ctrl{background:rgba(88,216,255,0.18);border-color:#58D8FF;color:#58D8FF}
-.shutter-side{width:42px;height:42px;border-radius:50%;background:rgba(6,16,29,0.82);border:1px solid rgba(108,231,255,0.28);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:all .2s}
-.shutter-side:hover{border-color:rgba(88,216,255,0.6)}
-.shutter-side.active-ctrl{background:rgba(88,216,255,0.18);border-color:#58D8FF}
-
-/* Hint pill */
-.hint-pill{position:absolute;top:52px;left:50%;transform:translateX(-50%);padding:6px 14px;border-radius:999px;background:rgba(5,10,19,0.85);border:1px solid rgba(108,231,255,0.22);font-size:11px;font-weight:600;color:#93AAC4;white-space:nowrap;z-index:25;backdrop-filter:blur(8px)}
-
-/* Hamburger in sim */
-.sim-header{display:flex;align-items:center;justify-content:space-between;padding:0 4px}
-.sim-hamburger{width:28px;height:28px;display:flex;flex-direction:column;justify-content:center;gap:4px;cursor:pointer}
-.sim-hamburger span{width:18px;height:2px;background:#93AAC4;border-radius:1px}
-  
-/* ============================
-   REVEAL ANIMATIONS
-   ============================ */
-.reveal { opacity: 0; transform: translateY(40px); transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); will-change: opacity, transform; }
-.reveal.active { opacity: 1; transform: translateY(0); }
-.delay-1, .delay-2, .delay-3, .delay-4 { transition-delay: 0s; }
-@media(min-width: 768px) {
-  .delay-1 { transition-delay: 0.1s; }
-  .delay-2 { transition-delay: 0.2s; }
-  .delay-3 { transition-delay: 0.3s; }
-  .delay-4 { transition-delay: 0.4s; }
+.roadmap-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1.65rem;
+  margin-top:2.2rem;
 }
-
-.hero-anim { opacity: 0; animation: fadeUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-@keyframes fadeUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
-.h-delay-1 { animation-delay: 0.1s; }
-.h-delay-2 { animation-delay: 0.2s; }
-.h-delay-3 { animation-delay: 0.3s; }
-.h-delay-4 { animation-delay: 0.4s; }
-
-/* Enhanced particle glow */
-#pc { filter: drop-shadow(0 0 4px rgba(88,216,255,0.2)); }
-
-</style>
-</head>
-<body>
-
-<canvas id="pc"></canvas>
-
-<div class="cw">
-
-<!-- NAV -->
-<nav class="nav" id="nav">
-  <div class="nav-inner">
-    <a href="#" class="nav-logo">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 240" width="100%" height="100%">
-  <defs>
-    <!-- Plastic D-Handle Radial Gradient -->
-    <radialGradient id="handleBody" cx="36%" cy="28%" r="80%">
-      <stop offset="0%" stop-color="#fdba74"/>
-      <stop offset="22%" stop-color="#fb923c"/>
-      <stop offset="58%" stop-color="#f97316"/>
-      <stop offset="85%" stop-color="#ea580c"/>
-      <stop offset="100%" stop-color="#9a3412"/>
-    </radialGradient>
-
-    <!-- Handle Top Bevel Highlight -->
-    <linearGradient id="handleBevel" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6"/>
-      <stop offset="40%" stop-color="#ffffff" stop-opacity="0"/>
-      <stop offset="100%" stop-color="#431407" stop-opacity="0.8"/>
-    </linearGradient>
-
-    <!-- Crisp Steel Blade Gradient -->
-    <linearGradient id="bladeChrome" x1="0" y1="106" x2="0" y2="116" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#334155"/>
-      <stop offset="14%" stop-color="#1e293b"/>
-      <stop offset="35%" stop-color="#94a3b8"/>
-      <stop offset="50%" stop-color="#ffffff"/>
-      <stop offset="65%" stop-color="#94a3b8"/>
-      <stop offset="86%" stop-color="#1e293b"/>
-      <stop offset="100%" stop-color="#334155"/>
-    </linearGradient>
-
-    <!-- Attachment Collar Gradient -->
-    <linearGradient id="collarSteel" x1="0" y1="98" x2="0" y2="124" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#090d16"/>
-      <stop offset="25%" stop-color="#475569"/>
-      <stop offset="50%" stop-color="#f1f5f9"/>
-      <stop offset="75%" stop-color="#334155"/>
-      <stop offset="100%" stop-color="#090d16"/>
-    </linearGradient>
-
-    <!-- Wordmark Gradients -->
-    <linearGradient id="ipGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#fdba74"/>
-      <stop offset="25%" stop-color="#fb923c"/>
-      <stop offset="60%" stop-color="#f97316"/>
-      <stop offset="100%" stop-color="#c2410c"/>
-    </linearGradient>
-
-    <linearGradient id="checkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#93c5fd"/>
-      <stop offset="25%" stop-color="#60a5fa"/>
-      <stop offset="60%" stop-color="#3b82f6"/>
-      <stop offset="100%" stop-color="#1d4ed8"/>
-    </linearGradient>
-
-    <!-- Vibrant Golden-Yellow Orange Motor Oil Gradient -->
-    <linearGradient id="oilBody" x1="0" y1="106" x2="0" y2="230" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#fde047" stop-opacity="0.15"/>
-      <stop offset="4%" stop-color="#facc15" stop-opacity="0.4"/>
-      <stop offset="8%" stop-color="#f59e0b" stop-opacity="0.75"/>
-      <stop offset="15%" stop-color="#ea580c" stop-opacity="0.95"/>
-      <stop offset="35%" stop-color="#c2410c" stop-opacity="1"/>
-      <stop offset="70%" stop-color="#9a3412" stop-opacity="1"/>
-      <stop offset="100%" stop-color="#5a190b" stop-opacity="1"/>
-    </linearGradient>
-
-    <!-- Internal Volumetric Caustic Glow -->
-    <radialGradient id="causticGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#fde047" stop-opacity="0.95"/>
-      <stop offset="40%" stop-color="#facc15" stop-opacity="0.7"/>
-      <stop offset="100%" stop-color="#ea580c" stop-opacity="0"/>
-    </radialGradient>
-
-    <!-- Prominent High-Contrast Measurement Crosshatch Pattern -->
-    <pattern id="measurementHatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-      <path d="M0,0 L0,4 M0,0 L4,0" stroke="#0f172a" stroke-width="1.3" fill="none"/>
-      <path d="M0.8,0.8 L0.8,4 M0.8,0.8 L4,0.8" stroke="#ffffff" stroke-width="0.9" opacity="0.95" fill="none"/>
-    </pattern>
-
-    <!-- Fluid Drop Shadow -->
-    <filter id="oilShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="3.5" stdDeviation="2.5" flood-color="#5a190b" flood-opacity="0.4"/>
-    </filter>
-    
-    <!-- Wordmark Drop Shadow -->
-    <filter id="logoShadow" x="-10%" y="-10%" width="125%" height="130%">
-      <feDropShadow dx="0" dy="2.5" stdDeviation="2" flood-color="#000000" flood-opacity="0.3"/>
-    </filter>
-
-    <!-- PERFECTLY UNIFIED OIL PATH: Shaft and your exact original droplet merged mathematically -->
-    <path id="unifiedOil" 
-          d="M 455 106 
-             L 560 106 
-             A 5 5 0 0 1 565 111 
-             A 5 5 0 0 1 560 116 
-             C 560 135, 551 145, 554 165
-             C 557 185, 565 195, 555 208
-             C 551 214, 547 216, 543 216
-             C 539 216, 535 214, 531 208
-             C 521 195, 529 185, 532 165
-             C 535 145, 526 135, 526 116
-             L 455 116 Z"/>
-  </defs>
-
-  <!-- 1. SHADOW LAYER (Rendered behind the blade so the blade physically blocks the upward shadow blur) -->
-  <g id="oil-shadow-layer">
-    <use href="#unifiedOil" fill="url(#oilBody)" filter="url(#oilShadow)" />
-  </g>
-
-  <!-- 2. STEEL BLADE SHAFT -->
-  <g id="blade-group">
-    <path d="M 130 106 L 560 106 A 5 5 0 0 1 565 111 A 5 5 0 0 1 560 116 L 130 116 Z" 
-          fill="url(#bladeChrome)"/>
-
-    <path d="M 136 106.5 L 560 106.5 A 4.5 4.5 0 0 1 564.5 111 A 4.5 4.5 0 0 1 560 115.5 L 136 115.5" 
-          fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0.4"/>
-
-    <!-- Prominent Hatches -->
-    <rect x="440" y="106" width="85" height="10" fill="url(#measurementHatch)" opacity="0.95"/>
-  </g>
-
-  <!-- 3. GLOSS LAYER ON TOP (No shadow, exact geometry, zero clip-paths) -->
-  <g id="oil-group">
-    <use href="#unifiedOil" fill="url(#oilBody)" />
-
-    <!-- Meniscus / Surface Tension Boundary -->
-    <path d="M 465 106.5 C 463 109, 461 112, 458 115.5" stroke="#facc15" stroke-width="1.2" fill="none" opacity="0.9"/>
-    
-    <!-- Top Fluid Film Highlight (Inset perfectly, clip-path removed to stop haloing) -->
-    <path d="M 466 106.5 L 560 106.5 A 4.5 4.5 0 0 1 564.5 111" fill="none" stroke="#facc15" stroke-width="0.8" opacity="0.85"/>
-    
-    <!-- Bottom Edge Highlights -->
-    <path d="M 459 115.5 L 526 115.5" fill="none" stroke="#f59e0b" stroke-width="0.8" opacity="0.85"/>
-
-    <!-- Volumetric Inner Caustic Glow -->
-    <ellipse cx="543" cy="190" rx="15" ry="13" fill="url(#causticGlow)" opacity="0.95"/>
-  </g>
-
-  <!-- 4. WORDMARK ('iPCheck') -->
-  <g font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" 
-     font-size="82" 
-     font-weight="900" 
-     letter-spacing="-1.5" 
-     filter="url(#logoShadow)">
-    <text x="146" y="99">
-      <tspan fill="url(#ipGrad)">iP</tspan><tspan fill="url(#checkGrad)">Check</tspan>
-    </text>
-  </g>
-
-  <!-- 5. PULL-HANDLE ('D') & ATTACHMENT COLLAR -->
-  <g id="handle-group">
-    <rect x="122" y="98" width="18" height="26" rx="3" fill="url(#collarSteel)" stroke="#090d16" stroke-width="0.75"/>
-    <path d="M 124 99.5 L 138 99.5" stroke="#ffffff" stroke-width="1" opacity="0.6"/>
-    <path d="M 128 98 v 26 m 6 -26 v 26" stroke="#000000" stroke-width="1.2" opacity="0.75"/>
-
-    <!-- Molded Plastic 'D' Loop -->
-    <path fill-rule="evenodd" 
-          d="M 50 20 C 120 20, 134 48, 134 111 S 120 202, 50 202 C 25 202, 20 180, 20 111 S 25 20, 50 20 Z 
-             M 52 46 C 88 46, 98 68, 98 111 S 88 176, 52 176 C 40 176, 40 154, 40 111 S 40 46, 52 46 Z" 
-          fill="url(#handleBody)" stroke="#7c2d12" stroke-width="1.5"/>
-
-    <!-- Plastic Ridge Highlight -->
-    <path fill-rule="evenodd" 
-          d="M 50 21 C 118 21, 132 49, 132 111 S 118 201, 50 201 C 26 201, 21 180, 21 111 S 26 21, 50 21 Z" 
-          fill="none" stroke="url(#handleBevel)" stroke-width="1.5" opacity="0.85"/>
-
-    <!-- Tactile Thumb Grips -->
-    <g stroke="#431407" stroke-width="2.5" stroke-linecap="round" opacity="0.8">
-      <path d="M 25 70 h 11"/>
-      <path d="M 24 86 h 12"/>
-      <path d="M 24 102 h 12"/>
-      <path d="M 24 118 h 12"/>
-      <path d="M 24 134 h 12"/>
-      <path d="M 25 150 h 11"/>
-    </g>
-  </g>
-</svg>
-</a>
-    <ul class="nav-links">
-      <li><a href="#features">Features</a></li>
-      <li><a href="#story">Our Story</a></li>
-      <li><a href="#pricing">Pricing</a></li>
-      <li><a href="#download" class="nav-cta">Get the App →</a></li>
-    </ul>
-    <button class="mob-btn" onclick="document.querySelector('.nav-links').classList.toggle('open')"><span></span><span></span><span></span></button>
-  </div>
-</nav>
-
-<!-- HERO -->
-<header class="hero" id="hero">
-  <div class="hero-glow hg1"></div>
-  <div class="hero-glow hg2"></div>
-  <div class="container hero-grid">
-    <div>
-      <div class="hero-pill hero-anim"><span class="pulse-dot"></span>DipCheck sees what OBD-II scanners miss.</div>
-      <h1 class="hero-anim h-delay-1">Point. Scan.<br /><span class="tc">Diagnose Any Vehicle</span><br /><span class="tg">In Real-Time.</span></h1>
-      <p class="hero-sub hero-anim h-delay-2">DipCheck uses your phone camera to identify engine issues, fluid leaks, worn parts, and more — then delivers severity ratings, step-by-step DIY repair guides, live parts pricing, and an AI mechanic you can talk to.</p>
-      <div class="hero-btns hero-anim h-delay-3">
-        <a href="#download" class="btn-pri"><span>Get DipCheck Free</span> <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
-        <a href="#simulator" class="btn-sec"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg><span>Try Live Demo</span></a>
-      </div>
-      </div>
-        <div class="proof-item"><div class="pv ag">Gemini AI</div><div class="pl">Powered by Google</div></div>
-        <div class="proof-item"><div class="pv ao">5</div><div class="pl">Calibration Profiles</div></div>
-      </div>
-    </div>
-
-    
-    </header>
-
-<!-- FEATURES -->
-<section class="section-pad" id="features">
-  <div class="container">
-    <div class="sh reveal">
-      <div class="sh-badge">⚡ Core Capabilities</div>
-      <h2>Everything You Need to <span class="tc-h">Fix It Yourself</span></h2>
-      <p>Whether you've never touched a wrench or you rebuild engines on weekends — DipCheck meets you where you are.</p>
-    </div>
-    <div class="feat-grid">
-      <div class="feat-card reveal delay-2"><div class="feat-icon fi-c">🔍</div><h3>AI Visual Diagnosis</h3><p>10 scan personas: visual diagnosis, part ID, fluid check, warning lights, sound diagnosis, symptom troubleshooting, shop quote analysis, pre-purchase inspection, road trip readiness, and OBD-II code translation.</p></div>
-      <div class="feat-card reveal delay-3"><div class="feat-icon fi-o">💰</div><h3>Parts Pricing & Shop Quotes</h3><p>Cross-references OEM and aftermarket part numbers with live prices from AutoZone, RockAuto, Amazon, and O'Reilly. Accurate shop quote estimates instantly.</p></div>
-      <div class="feat-card reveal delay-1"><div class="feat-icon fi-y">🔧</div><h3>Interactive Repair Guides</h3><p>Step-by-step walkthroughs with tools needed, torque specs, difficulty ratings, safety warnings, and an interactive progress checklist with haptic feedback.</p></div>
-      <div class="feat-card reveal delay-2"><div class="feat-icon fi-b">🤖</div><h3>AI Mechanic Chat</h3><p>4 chat modes: free diagnostic, step-by-step guided troubleshooting, acoustic sound analysis, and OBD-II telemetry. Voice Q&A with text-to-speech and push-to-talk.</p></div>
-      <div class="feat-card reveal delay-3"><div class="feat-icon fi-g">🚗</div><h3>Digital Garage & VIN Decode</h3><p>Multi-vehicle profiles with NHTSA VIN auto-decode, odometer tracking, scan history per vehicle, and health score monitoring across your entire fleet.</p></div>
-      <div class="feat-card reveal delay-1"><div class="feat-icon fi-r">❤️</div><h3>Predictive Health Dashboard</h3><p>Remaining Useful Life (RUL) estimates for every component. Overall health score, 6-month repair budget forecasting, and proactive maintenance alerts before issues happen.</p></div>
-      <div class="feat-card reveal delay-2"><div class="feat-icon fi-c">📟</div><h3>OBD-II CAN-BUS Telemetry</h3><p>Virtual ELM327 interface with live gauges for RPM, coolant temp, fuel trims, and O2 voltage. Anomaly injection testing and pre-DTC early warning alerts.</p></div>
-      <div class="feat-card reveal delay-3"><div class="feat-icon fi-o">📍</div><h3>Local Mechanics & Parts Map</h3><p>Google Maps integration to find nearby mechanics and parts stores. See ratings, reviews, addresses, and get one-tap driving directions to the closest shop.</p></div>
-      <div class="feat-card reveal delay-1"><div class="feat-icon fi-g">⚙️</div><h3>5 Calibration Profiles</h3><p>Tune AI sensitivity for your vehicle type: Standard Daily Driver, High-Mileage 100k+, New/Low-Mileage, Diesel Heavy-Duty, or Performance/Turbo — each with specialized thresholds.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- ORIGIN STORY -->
-<section class="section-pad story" id="story">
-  <div class="container">
-    <div class="sh reveal">
-      <div class="sh-badge">👤 The Origin Story</div>
-      <h2>Born in a Driveway. <span class="tc-h">Built for Everyone.</span></h2>
-    </div>
-    <div class="story-grid">
-      <div class="story-portrait reveal">
-        <div class="portrait-frame">
-          <div class="initials">😊</div>
-        </div>
-        <div class="portrait-badge">@jtalford1228-dev • Truman-dev</div>
-      </div>
-      <div class="story-content reveal delay-1">
-        <h3 class="story-name">Jeremey Alford</h3>
-        <p class="story-role">Founder & Solo Developer — Truman-dev</p>
-
-        <p class="story-p">
-          I went to school for <strong>welding</strong>. I never planned to write a single line of code. But then one afternoon I was under the hood of my truck, spending hours chasing down a <span class="hl-y">vacuum leak</span> — YouTube video after YouTube video, forum post after forum post, guessing which hose was the problem. I remember thinking:
-        </p>
-
-        <div class="quote-block">
-          "Why isn't there an app that can just <em>look</em> at this and tell me what's wrong? Something that could help anyone fix their car — whether they're a total newbie, a weekend wrench-turner, or a master tech."
-          <div class="quote-attr">— Jeremey, on the moment DipCheck was born</div>
-        </div>
-
-        <p class="story-p">
-          That question became an obsession. I taught myself <span class="hl-c">TypeScript</span>, <span class="hl-c">React Native</span>, <span class="hl-c">Python</span>, and eventually <span class="hl-c">Cython and C</span> for native performance. I built DipCheck from my apartment, nights and weekends, while working full-time. What started as "an app that scans a hose" turned into something <strong>far bigger than I ever imagined</strong>.
-        </p>
-
-        <p class="story-p">
-          Today, DipCheck doesn't just identify parts — it gives you a full <span class="hl-y">AI diagnosis with severity ratings</span>, <span class="hl-y">step-by-step DIY repair guides</span>, <span class="hl-y">live parts price comparison</span>, an <span class="hl-y">AI mechanic you can talk to</span>, and a <span class="hl-y">digital garage</span> for every vehicle you own. I went from welding school to building a product that rivals the tech coming out of Google and Microsoft — and this is just the beginning.
-        </p>
-
-        <p class="story-p">
-          Software development isn't just a pivot — <strong>it's my passion through and through</strong>. Every line of code in DipCheck is written to make sure nobody has to sit in a driveway, confused and alone, ever again.
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- PRICING -->
-<section class="section-pad" id="pricing">
-  <div class="container">
-    <div class="sh reveal">
-      <div class="sh-badge">💎 Simple Pricing</div>
-      <h2>Start Free. <span class="tc-h">Upgrade When You're Ready.</span></h2>
-      <p>No hidden fees. No data selling. Just a tool that helps you fix your car.</p>
-    </div>
-    <div class="price-grid">
-      <div class="reveal delay-2 price-card">
-        <h3>Free</h3>
-        <p class="price-tag">Try DipCheck's camera AI risk-free.</p>
-        <div class="price-val">$0 <span>/ forever</span></div>
-        <ul class="price-list">
-          <li><span class="ck">✓</span> 3 camera scans per month</li>
-          <li><span class="ck">✓</span> Part identification & urgency preview</li>
-          <li><span class="ck">✓</span> Fallback guidance when AI is unavailable</li>
-          <li><span class="ck">✓</span> 1 vehicle in Digital Garage</li>
-        </ul>
-        <button class="btn-plan btn-plan-s">Get Started Free</button>
-      </div>
-      <div class="reveal delay-3 price-card">
-        <h3>Weekend Pass</h3>
-        <p class="price-tag">48-hour burst for a big weekend project.</p>
-        <div class="price-val">$4.99 <span>/ 48 hrs</span></div>
-        <ul class="price-list">
-          <li><span class="ck">✓</span> Up to 10 camera scans for 48 hours</li>
-          <li><span class="ck">✓</span> Full repair walkthroughs with tools & torque</li>
-          <li><span class="ck">✓</span> Part pricing & value comparisons</li>
-          <li><span class="ck">✓</span> Multi-vehicle Digital Garage</li>
-        </ul>
-        <button class="btn-plan btn-plan-s">Get Weekend Pass</button>
-      </div>
-      <div class="reveal delay-4 price-card pop">
-        <div class="pop-badge">Recommended</div>
-        <h3>Pro</h3>
-        <p class="price-tag">Everything you need to diagnose and repair.</p>
-        <div class="price-val">$9.99 <span>/ month</span></div>
-        <ul class="price-list">
-          <li><span class="ck">✓</span> Up to <strong>50</strong> camera scans per month</li>
-          <li><span class="ck">✓</span> Full repair walkthroughs with tools & torque</li>
-          <li><span class="ck">✓</span> Part pricing, comparisons, & follow-up chat</li>
-          <li><span class="ck">✓</span> Multi-vehicle Digital Garage</li>
-        </ul>
-        <button class="btn-plan btn-plan-p">Upgrade</button>
-      </div>
-      <div class="reveal delay-1 price-card">
-        <h3>Pro+</h3>
-        <p class="price-tag">B2B-ready diagnostics for shops & power users.</p>
-        <div class="price-val">$24.99 <span>/ month</span></div>
-        <ul class="price-list">
-          <li><span class="ck">✓</span> Up to <strong>250</strong> camera scans per month</li>
-          <li><span class="ck">✓</span> B2B diagnostics with full tools & torque specs</li>
-          <li><span class="ck">✓</span> Priority reliability & confidence scoring</li>
-          <li><span class="ck">✓</span> Shop workflow insights & pricing tools</li>
-        </ul>
-        <button class="btn-plan btn-plan-s">Upgrade to Pro+</button>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- FINAL CTA -->
-<section class="section-pad" id="download">
-  <div class="container">
-    <div class="cta-box reveal">
-      <div class="sh-badge">🚀 Ready to Scan</div>
-      <h2 class="sh" style="margin-bottom:1rem"><span style="font-family:'Outfit',sans-serif;font-size:clamp(2.2rem,4.2vw,3.4rem);font-weight:800">Diagnose Your Car in Seconds.<br /><span class="tc-h">Save Thousands on Repairs.</span></span></h2>
-      <p style="font-size:1.1rem;color:var(--text-muted);max-width:550px;margin:0 auto 2.5rem;line-height:1.7">Download DipCheck for free and start scanning. No credit card required. Just you, your phone, and your vehicle.</p>
-      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
-        <button class="btn-pri" onclick="alert('Coming soon to App Store & Google Play! Run npx expo start --dev-client to test now.')">Download DipCheck Free →</button>
-        <a href="https://github.com/jtalford1228-dev" target="_blank" class="btn-sec"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>View on GitHub</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer class="footer">
-  <div class="container footer-inner">
-    <div class="footer-brand"><span class="wd">Dip</span><span class="wc">Check</span></div>
-    <ul class="footer-links">
-      <li><a href="#features">Features</a></li>
-      <li><a href="#story">Our Story</a></li>
-      <li><a href="#pricing">Pricing</a></li>
-      <li><a href="https://github.com/jtalford1228-dev" target="_blank">GitHub</a></li>
-    </ul>
-    <div class="footer-copy">&copy; 2026 Truman-dev / Jeremey Alford. All rights reserved.</div>
-  </div>
-</footer>
-
-</div>
-
-<script>
-/* ============================================================
-   PARTICLE CANVAS
-   ============================================================ */
-
-const cv=document.getElementById('pc'),cx=cv.getContext('2d');let pts=[],mx=-1e3,my=-1e3;
-function rsz(){cv.width=innerWidth;cv.height=innerHeight;}
-class P{
-  constructor(){
-    this.x=Math.random()*cv.width;
-    this.y=Math.random()*cv.height;
-    this.vx=(Math.random()-.5)*.5;
-    this.vy=(Math.random()-.5)*.5;
-    this.r=Math.random()*1.8+.8;
-    const c=['88,216,255','51,161,255','255,174,66','47,226,122'];
-    this.c=c[Math.floor(Math.random()*c.length)];
-    this.a=Math.random()*.5+.2;
-    this.baseY = this.y;
-  }
-  update(scrollDelta){
-    this.x+=this.vx;
-    this.y+=this.vy;
-    
-    // Parallax scroll effect
-    if(scrollDelta !== 0) {
-      // Larger particles (closer) move faster with scroll
-      this.y -= scrollDelta * (this.r * 0.25);
-    }
-    
-    // Wrap around screen
-    if(this.x<0) this.x=cv.width;
-    if(this.x>cv.width) this.x=0;
-    if(this.y<0) this.y=cv.height;
-    if(this.y>cv.height) this.y=0;
-    
-    // Mouse interaction
-    const dx=this.x-mx,dy=this.y-my,d=Math.sqrt(dx*dx+dy*dy);
-    if(d<180){
-      const f=(180-d)/180*.03;
-      this.vx+=dx*f;this.vy+=dy*f;
-    }
-    this.vx*=.98;this.vy*=.98;
-    
-    // Base floating velocity
-    this.x += Math.sin(Date.now()*0.001 + this.r)*0.2;
-    this.y += Math.cos(Date.now()*0.0015 + this.r)*0.2;
-  }
-  draw(){
-    cx.beginPath();cx.arc(this.x,this.y,this.r,0,Math.PI*2);
-    cx.fillStyle=`rgba(${this.c},${this.a})`;cx.fill();
-  }
+.phase-card{
+  background:rgba(5, 11, 22, 0.78);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  padding:2rem 1.7rem;
+  display:flex;flex-direction:column;
+  position:relative;
+  transition:all .3s ease;
 }
-function init(){pts=[];const n=Math.floor(innerWidth/15);for(let i=0;i<n;i++)pts.push(new P)}
-let lastScrollY = window.scrollY;
-function render(){
-  cx.clearRect(0,0,cv.width,cv.height);
-  const currentScrollY = window.scrollY;
-  const scrollDelta = currentScrollY - lastScrollY;
-  lastScrollY = currentScrollY;
-  
-  for(let i=0;i<pts.length;i++){
-    pts[i].update(scrollDelta);
-    pts[i].draw();
-    for(let j=i+1;j<pts.length;j++){
-      const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
-      if(d<140){
-        cx.beginPath();cx.moveTo(pts[i].x,pts[i].y);cx.lineTo(pts[j].x,pts[j].y);
-        const op = (1-d/140)*.15;
-        cx.strokeStyle=`rgba(88,216,255,${op})`;cx.lineWidth=0.8;cx.stroke();
-      }
-    }
-  }
-  requestAnimationFrame(render);
+.phase-card.active-phase{
+  border-color:var(--orange-bright);
+  box-shadow:0 16px 40px rgba(0,0,0,.55), 0 0 28px rgba(249,115,22,.16);
 }
-addEventListener('resize',()=>{rsz();init()});
-addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
-rsz();init();render();
-
-/* ============================================================
-   NAVBAR SCROLL
-   ============================================================ */
-addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('scrolled',scrollY>40)});
-
-/* ============================================================
-   SCROLL REVEAL OBSERVER
-   ============================================================ */
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('active');
-    }
-  });
-}, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
-
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-</script>
-</body>
-</html>
+.phase-status{
+  display:inline-flex;align-items:center;gap:.45rem;
+  padding:.32re
